@@ -22,10 +22,11 @@ its numbers can be compared with field-trial results.
 ## Action, observation, reward
 
 - **Action** (per cell, 21 discrete): MCS delta in {-4..+2} relative to the reported CQI index, times power back-off
-  in {0, -3, -6} dB.
-- **Observation** (12 floats per cell): reported CQI, a 10%-target OLLA offset the env tracks for the UE, the UE's
-  wideband CQI average, CQI trend, last 4 HARQ outcomes, own last power, neighbours' mean last power, neighbours'
-  scheduled-UE wideband CQI (an idealised X2-style exchange), top-CQI flag. All learners get the same observation.
+  in {0, -3, -6} dB. "CQI index" throughout means `phy.cqi_from_sinr`'s 0-14 (LTE CQI 1-15; -1 = out of range, LTE
+  CQI 0); "top CQI index" is 14 (LTE CQI 15).
+- **Observation** (12 floats per cell): reported CQI index, a 10%-target OLLA offset the env tracks for the UE, the UE's
+  wideband CQI average, CQI trend, last 4 ACK/NACK outcomes (there is no HARQ retransmission), own last power, neighbours' mean last power, neighbours'
+  scheduled-UE wideband CQI (an idealised X2-style exchange), top-CQI-index flag. All learners get the same observation.
 - **Reward**: the cell's goodput EFF[MCS] x ACK (bit/s/Hz). IQL uses its own cell's goodput, IQL-team the mean over
   cells, VDN the sum (in one joint TD target). The single-agent DQN uses its own goodput.
 
@@ -62,7 +63,9 @@ the ranking among learners.
 
 All randomness of an episode is drawn from its seed up front, so every method sees exactly the same drops, fading,
 outer-cell activity, CQI noise and decoding coin flips (common random numbers). Only interference between the controlled
-cells and the PF state depend on actions. `tests/test_agents.py::test_seed_streams_disjoint` checks the split.
+cells and the PF state depend on actions. `tests/test_agents.py::test_seed_streams_disjoint` checks the seed formulas are disjoint, and
+`tests/test_pipeline.py` checks the wiring: a spy on `env.reset` during training, `tune_rules` on dev seeds only,
+and grid evaluation on the eval seeds.
 
 ## Statistics ([`aran/stats.py`](../aran/stats.py), [`scripts/aggregate.py`](../scripts/aggregate.py))
 
@@ -120,3 +123,8 @@ One change was made to a method after results existed; everything else ran as fi
 - -6 dB and "top CQI index" are hand-set and untuned. No seed, split, hyperparameter or comparison changed.
 - Tuning was re-checked in r1 (`scripts/tune_rules.py`, which now records the full list of dev seeds it used); the
   tuning CSVs reproduced byte for byte and the choice is unchanged.
+
+## Reward scope
+
+The reward is goodput only (own-cell, or the team mean / sum). Fairness enters only through the PF scheduler; no
+learner is rewarded for edge throughput or Jain fairness.

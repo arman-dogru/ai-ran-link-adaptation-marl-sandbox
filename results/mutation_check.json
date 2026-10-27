@@ -1,9 +1,9 @@
 {
  "control": {
   "exit": 0,
-  "summary": ".................................                                        [100%]"
+  "summary": "107 passed in 20.45s"
  },
- "killed": 81,
+ "killed": 82,
  "total": 82,
  "mutants": [
   {
@@ -465,8 +465,8 @@
   {
    "file": "aran/provenance.py",
    "what": "code hash ignores file contents",
-   "status": "SURVIVED",
-   "exit": 0
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "scripts/aggregate.py",
