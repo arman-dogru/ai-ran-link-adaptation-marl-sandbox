@@ -65,7 +65,8 @@ def forest(res, out):
         ax = axes[j]
         y = np.arange(len(d))[::-1]
         col = np.where(d.significant, np.where(d["diff"] > 0, "#2e8b57", "#c0392b"), "#999999")
-        ax.errorbar(d["diff"], y, xerr=[d["diff"] - d.ci_lo, d.ci_hi - d["diff"]], fmt="none", ecolor=col, capsize=2)
+        for yi, (_, r), cc in zip(y, d.iterrows(), col):
+            ax.errorbar(r["diff"], yi, xerr=[[r["diff"] - r.ci_lo], [r.ci_hi - r["diff"]]], fmt="none", ecolor=cc, capsize=2)
         ax.scatter(d["diff"], y, c=col, zorder=3, s=18)
         ax.axvline(0, color="k", lw=0.6)
         ax.set_yticks(y, [f"{LABEL[a]} - {LABEL[b]} [{m}]" for a, b, m in zip(d.a, d.b, d.metric)])
@@ -220,7 +221,7 @@ def action_heatmaps(res, out, sc="default"):
         d = a[a.policy == pol]
         D = d.pivot_table(index="delta", columns="cqi", values="count", aggfunc="sum").reindex(columns=cq).fillna(0)
         D = D.reindex(range(int(min(-6, D.index.min())), int(max(2, D.index.max())) + 1)).fillna(0)
-        frac = D / D.sum(0).replace(0, np.nan)
+        frac = D / D.sum(axis=0).replace(0, np.nan)
         ax = axes[0, j]
         ax.imshow(frac.values, origin="lower", aspect="auto", cmap="magma", vmin=0, vmax=1,
                   extent=[cq[0] - 0.5, cq[-1] + 0.5, D.index.min() - 0.5, D.index.max() + 0.5])
@@ -228,7 +229,7 @@ def action_heatmaps(res, out, sc="default"):
         ax.set_ylabel("MCS - CQI index" if j == 0 else "")
         Pw = d.pivot_table(index="power_db", columns="cqi", values="count", aggfunc="sum").reindex(columns=cq).fillna(0)
         Pw = Pw.reindex([-6.0, -3.0, 0.0]).fillna(0)
-        pf = Pw / Pw.sum(0).replace(0, np.nan)
+        pf = Pw / Pw.sum(axis=0).replace(0, np.nan)
         ax = axes[1, j]
         im = ax.imshow(pf.values, origin="lower", aspect="auto", cmap="magma", vmin=0, vmax=1,
                        extent=[cq[0] - 0.5, cq[-1] + 0.5, -0.5, 2.5])
