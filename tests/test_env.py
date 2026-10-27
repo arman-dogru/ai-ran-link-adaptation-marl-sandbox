@@ -211,3 +211,17 @@ def test_kpis_consistent():
     assert 1 / 12 <= k["jain"] <= 1.0
     assert k["edge"] == pytest.approx(np.sort(k["ue_thr"])[:3].mean())
     assert k["power_db"] == 0.0
+
+
+def test_observation_features():
+    env = MultiCellLAEnv(CFG)
+    env.reset(seed=17)
+    env.step(np.array([encode_action(CFG, 0, 2), encode_action(CFG, 0, 1), encode_action(CFG, 0, 0)]))
+    o, u = env._obs(), env.sched
+    assert np.allclose(o[:, 8], np.array([-6.0, -3.0, 0.0]) / 6)
+    assert np.allclose(o[:, 9], np.array([-1.5, -3.0, -4.5]) / 6)  # mean of the two neighbours
+    wb = env.wb_cqi[u] + 1
+    assert np.allclose(o[:, 10], np.array([wb[1] + wb[2], wb[0] + wb[2], wb[0] + wb[1]]) / 2 / 15, atol=1e-6)
+    assert np.allclose(o[:, 0], (env.rep[u] + 1) / 15)
+    assert np.allclose(o[:, 11], env.rep[u] >= 14)
+    assert np.allclose(o[:, 1], env.olla10[u] / 10, atol=1e-6)

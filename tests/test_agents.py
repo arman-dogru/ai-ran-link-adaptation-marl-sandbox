@@ -17,8 +17,8 @@ def test_cpu_only_and_tiny_net():
 
 
 def test_seed_streams_disjoint():
-    train = {A.train_episode_seed(s, e) for s in range(20) for e in range(5000)}
-    assert len(train) == 20 * 5000
+    train = {A.train_episode_seed(s, e) for s in range(20) for e in range(20_000)}
+    assert len(train) == 20 * 20_000 and min(train) >= A.TRAIN_SEED_BASE
     assert not train & set(A.DEV_SEEDS) and not train & set(A.EVAL_SEEDS)
     assert not set(A.DEV_SEEDS) & set(A.EVAL_SEEDS)
     assert len(A.EVAL_SEEDS) == 100 and len(A.DEV_SEEDS) == 50
@@ -127,3 +127,29 @@ def test_replay_ring():
     for i in range(6):
         rb.add(np.full((2, OBS_DIM), i), [i, i], [i, i], np.zeros((2, OBS_DIM)), 0.0)
     assert len(rb) == 4 and set(rb.a[:, 0]) == {2, 3, 4, 5}
+
+
+def test_td_loss_terminal_masks_bootstrap_independent():
+    net = Const([[1.0, 2.0], [5.0, 0.0]])
+    tgt = Const([[10.0, 20.0], [30.0, 40.0]])
+    o, a, r, o2, d = _batch()
+    want = torch.nn.functional.smooth_l1_loss(torch.tensor([[1.0, 2.0]]), torch.tensor([[1.0, 3.0]]))
+    assert A.td_loss("iql", net, tgt, (o, a, r, o2, np.ones(1, np.float32)), 0.5).item() == pytest.approx(want.item())
+
+
+def test_initial_weights_depend_on_seed():
+    n3, c = A.train("iql", SMALL, 3, 0, P.OLLA(), hp=HP)
+    n4, _ = A.train("iql", SMALL, 4, 0, P.OLLA(), hp=HP)
+    n3b, _ = A.train("iql", SMALL, 3, 0, P.OLLA(), hp=HP)
+    assert c == []
+    assert any(not torch.equal(p, q) for p, q in zip(n3.parameters(), n4.parameters()))
+    assert all(torch.equal(p, q) for p, q in zip(n3.parameters(), n3b.parameters()))
+
+
+def test_target_network_synced(monkeypatch):
+    calls = []
+    orig = A.QNet.load_state_dict
+    monkeypatch.setattr(A.QNet, "load_state_dict", lambda self, *a, **k: (calls.append(1), orig(self, *a, **k))[1])
+    A.train("iql", SMALL, 0, 2, P.OLLA(), hp=dict(HP, sync=7))
+    updates = 2 * SMALL.episode_tti - HP["warmup"] + 1  # one update per step once the buffer holds `warmup`
+    assert len(calls) == 1 + updates // 7
