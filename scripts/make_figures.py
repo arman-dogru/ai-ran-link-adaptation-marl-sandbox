@@ -1,5 +1,5 @@
 """All README figures, from committed results only (results/*.csv, results/summary.json, results/trace_default.csv,
-results/dev_tuning_default.csv). Refuses a summary that does not cover the full grid."""
+results/dev_tuning_default.csv, results/power_ablation.csv). Refuses a summary that does not cover the full grid."""
 import argparse, json, os, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -253,6 +253,30 @@ def action_heatmaps(res, out, sc="default"):
     save(fig, out, f"actions_{sc}.png")
 
 
+def power_ablation_plot(res, out):
+    ab = pd.read_csv(os.path.join(res, "power_ablation.csv"))
+    fig, axes = plt.subplots(1, 2, figsize=(9, 3.6))
+    for ax, sc in zip(axes, S.SCENARIOS):
+        g = ab[ab.scenario == sc]
+        meths = ["iql", "iql_team", "vdn"]
+        for i, m in enumerate(meths):
+            d = g[g.method == m]
+            for k, (col, dx) in enumerate((("se_learned", -0.17), ("se_full_power", 0.17))):
+                ax.scatter(np.full(len(d), i + dx), d[col], s=8, color=COLOR[m], alpha=0.35 if k == 0 else 0.9,
+                           marker="o" if k == 0 else "s")
+                ax.hlines(d[col].mean(), i + dx - 0.12, i + dx + 0.12, color="k", lw=1.5)
+            for a_, b_ in zip(d.se_learned, d.se_full_power):
+                ax.plot([i - 0.17, i + 0.17], [a_, b_], color=COLOR[m], lw=0.4, alpha=0.5)
+        ax.axhline(g[g.method == "iql"].se_learned.mean(), color=COLOR["iql"], ls=":", lw=1, label="IQL as learned (mean)")
+        ax.set_xticks(range(3), [f"{LABEL[m]}\nlearned | 0 dB" for m in meths])
+        ax.set_ylabel("SE (bit/s/Hz per cell)")
+        ax.set_title(f"{sc}: same MCS choices, power forced to 0 dB", fontsize=9)
+        ax.legend(fontsize=7, loc="lower left")
+    fig.suptitle("Power ablation: 15 seeds x first 30 eval episodes (circles = as learned, squares = full power, bars = means)", fontsize=9)
+    fig.tight_layout()
+    save(fig, out, "power_ablation.png")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--results", default=os.path.join(ROOT, "results"))
@@ -261,7 +285,7 @@ def main():
     full_summary(a.results)
     os.makedirs(a.out, exist_ok=True)
     for f in (kpi_bars, forest, learning_curves, timeline, sweep_heatmaps, tuning_heatmap, proxies, horizon_plot,
-              action_heatmaps, lambda r, o: action_heatmaps(r, o, "coupled")):
+              power_ablation_plot, action_heatmaps, lambda r, o: action_heatmaps(r, o, "coupled")):
         f(a.results, a.out)
         print("ok", getattr(f, "__name__", "f"))
 
