@@ -12,26 +12,32 @@ import json
 import torch
 
 from aran import agents as A, policies as P, scenarios as S
+from aran import provenance as PV
 from aran.env import MultiCellLAEnv, with_
-from run_grid import rule_policy, write_csv
+from run_grid import rule_policy, write_csv, StaleResult
 
 SWEEP_RULES = ("cqi-only", "olla-tuned", "genie")
 KEYS = ("speed_kmh", "cqi_delay", "seed", "episode_seed", "se", "bler", "jain", "edge", "power_db", "inr_db")
 
 
 def expected_sweep_files():
-    return sorted([f"sweep/rule_{r}.csv" for r in SWEEP_RULES] + [f"sweep/{m}.csv" for m in S.LEARNERS])
+    names = [f"rule_{r}" for r in SWEEP_RULES] + list(S.LEARNERS)
+    return sorted([f"sweep/{n}.csv" for n in names] + [f"sweep/{n}.meta.json" for n in names])
 
 
 def job(args):
     name, raw, force = args
     path = os.path.join(raw, "sweep", f"{name}.csv")
-    if not force and os.path.exists(path):
-        return path, 0.0
     t0 = time.time()
     torch.set_num_threads(1)
     base = S.scenario_config("default", os.path.join(ROOT, "config/default.json"))
     tun = json.load(open(os.path.join(os.path.dirname(os.path.abspath(raw)), "dev_tuning_default.json")))
+    mpath = path[:-4] + ".meta.json"
+    meta = PV.run_meta(base, tun, extra_files=("scripts/run_sweep.py",), kind="sweep", policy=name)
+    if not force and os.path.exists(path):
+        if PV.up_to_date(mpath, meta):
+            return path, "skip (up to date)"
+        raise StaleResult(f"{path}: output exists but its meta.json is missing or stale; re-run with --force")
     if name.startswith("rule_"):
         pols = [(-1, rule_policy(name[5:], tun))]
     else:
@@ -52,7 +58,8 @@ def job(args):
                     rows.append(k)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     write_csv(path, rows, KEYS)
-    return path, time.time() - t0
+    PV.write_meta(mpath, meta)
+    return path, f"{time.time() - t0:.0f}s"
 
 
 def main():
@@ -64,7 +71,7 @@ def main():
     jobs = [(f"rule_{r}", a.raw, a.force) for r in SWEEP_RULES] + [(m, a.raw, a.force) for m in S.LEARNERS]
     with Pool(a.workers) as pool:
         for p, dt in pool.imap_unordered(job, jobs):
-            print(f"[{time.strftime('%H:%M:%S')}] {os.path.relpath(p, a.raw)} {dt:.0f}s", flush=True)
+            print(f"[{time.strftime('%H:%M:%S')}] {os.path.relpath(p, a.raw)} {dt}", flush=True)
 
 
 if __name__ == "__main__":

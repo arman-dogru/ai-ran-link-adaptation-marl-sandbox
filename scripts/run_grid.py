@@ -1,6 +1,10 @@
 """Run the main grid: rule baselines and learners (scenario x method x seed), each learner trained from scratch on
-training episodes and evaluated greedily on the shared evaluation episodes. Existing outputs are skipped unless
---force. Output: results/raw/<scenario>/<run>/{eval.csv, curve.csv, model.pt}."""
+training episodes and evaluated greedily on the shared evaluation episodes (EVAL_SEEDS).
+Output: results/raw/<scenario>/<run>/{eval.csv, curve.csv, model.pt, meta.json}.
+
+Re-runs: a run is skipped only if its meta.json shows the same code hash, config and tuned rule parameters (it would
+reproduce byte for byte). A run whose outputs exist but whose provenance is stale or missing is an error unless
+--force is given, so code changes can never leave stale rows behind silently."""
 import argparse, csv, json, os, sys, time
 from multiprocessing import Pool
 
@@ -12,6 +16,7 @@ import torch
 from aran import agents as A, policies as P
 from aran.env import MultiCellLAEnv
 from aran import scenarios as S
+from aran import provenance as PV
 
 KEYS = ("episode_seed", "se", "bler", "jain", "edge", "power_db", "inr_db")
 
@@ -41,13 +46,27 @@ def evaluate(env, pol, seeds):
     return rows
 
 
+class StaleResult(RuntimeError):
+    pass
+
+
+def eval_seeds():
+    """The evaluation episodes every reported number uses."""
+    return list(A.EVAL_SEEDS)
+
+
 def job(args):
     sc, kind, name, seed, out, force = args
     cfg = S.scenario_config(sc, os.path.join(ROOT, "config/default.json"))
     tun = json.load(open(os.path.join(os.path.dirname(os.path.abspath(out)), f"dev_tuning_{sc}.json")))
     d = os.path.join(out, sc, f"rule_{name}" if kind == "rule" else f"{name}_s{seed}")
+    meta = PV.run_meta(cfg, tun, scenario=sc, kind=kind, method=name, seed=int(seed) if kind != "rule" else None,
+                       eval_seeds=[min(A.EVAL_SEEDS), max(A.EVAL_SEEDS)],
+                       train_episodes=S.EPISODES if kind != "rule" else 0)
     if not force and os.path.exists(os.path.join(d, "eval.csv")):
-        return d, 0.0
+        if PV.up_to_date(os.path.join(d, "meta.json"), meta):
+            return d, "skip (up to date)"
+        raise StaleResult(f"{d}: outputs exist but meta.json is missing or stale; re-run with --force")
     os.makedirs(d, exist_ok=True)
     t0 = time.time()
     torch.set_num_threads(1)
@@ -59,17 +78,18 @@ def job(args):
         write_csv(os.path.join(d, "curve.csv"), curve, list(curve[0]))
         torch.save(net.state_dict(), os.path.join(d, "model.pt"))
         pol = A.NetPolicy(net, name)
-    write_csv(os.path.join(d, "eval.csv"), evaluate(env, pol, A.EVAL_SEEDS), KEYS)
-    return d, time.time() - t0
+    write_csv(os.path.join(d, "eval.csv"), evaluate(env, pol, eval_seeds()), KEYS)
+    PV.write_meta(os.path.join(d, "meta.json"), meta)
+    return d, f"{time.time() - t0:.0f}s"
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default=os.path.join(ROOT, "results/raw"))
     ap.add_argument("--workers", type=int, default=7)
-    ap.add_argument("--scenarios", nargs="*", default=list(S.SCENARIOS))
+    ap.add_argument("--scenarios", nargs="*", default=list(S.SCENARIOS), choices=list(S.SCENARIOS))
     ap.add_argument("--force", action="store_true")
-    ap.add_argument("--rules", nargs="*", default=list(S.RULES), help="rule baselines to run")
+    ap.add_argument("--rules", nargs="*", default=list(S.RULES), choices=list(S.RULES), help="rule baselines to run")
     ap.add_argument("--no-learners", action="store_true")
     a = ap.parse_args()
     jobs = []
@@ -79,7 +99,7 @@ def main():
             jobs += [(sc, "learn", m, s, a.out, a.force) for s in S.SEEDS for m in S.LEARNERS]
     with Pool(a.workers) as pool:
         for i, (d, dt) in enumerate(pool.imap_unordered(job, jobs), 1):
-            print(f"[{time.strftime('%H:%M:%S')}] {i}/{len(jobs)} {os.path.relpath(d, a.out)} {dt:.0f}s", flush=True)
+            print(f"[{time.strftime('%H:%M:%S')}] {i}/{len(jobs)} {os.path.relpath(d, a.out)} {dt}", flush=True)
 
 
 if __name__ == "__main__":

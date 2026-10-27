@@ -42,6 +42,19 @@ class Config:
     episode_tti: int = 200
     pf_window: float = 50.0
 
+    def __post_init__(self):
+        """Size caps so any run stays CPU-sized (the experiments use 3 cells x 4 UEs x 200 TTIs; the horizon check
+        evaluates up to 3000 TTIs)."""
+        caps = dict(n_cells=(1, 7), ues_per_cell=(1, 16), n_outer=(0, 12), episode_tti=(1, 5000), cqi_delay=(0, 64))
+        for k, (lo, hi) in caps.items():
+            v = getattr(self, k)
+            if not (isinstance(v, int) and lo <= v <= hi):
+                raise ValueError(f"Config.{k}={v!r} outside the CPU-sized cap [{lo}, {hi}]")
+        if not (0.0 <= self.outer_load <= 1.0) or self.speed_kmh < 0 or self.pf_window < 1:
+            raise ValueError("Config: outer_load must be in [0, 1], speed_kmh >= 0, pf_window >= 1")
+        if 0 not in self.mcs_deltas or not self.power_levels_db or self.power_levels_db[0] != 0.0:
+            raise ValueError("Config: mcs_deltas must contain 0 and power_levels_db must start at 0 dB")
+
     @property
     def n_actions(self):
         return len(self.mcs_deltas) * len(self.power_levels_db)

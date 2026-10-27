@@ -26,8 +26,8 @@ def expected_main_files(scenarios=tuple(SCENARIOS)):
     out = []
     for sc in scenarios:
         for r in RULES:
-            out.append(f"{sc}/rule_{r}/eval.csv")
+            out += [f"{sc}/rule_{r}/eval.csv", f"{sc}/rule_{r}/meta.json"]
         for m in LEARNERS:
             for s in SEEDS:
-                out += [f"{sc}/{m}_s{s}/eval.csv", f"{sc}/{m}_s{s}/curve.csv", f"{sc}/{m}_s{s}/model.pt"]
+                out += [f"{sc}/{m}_s{s}/{f}" for f in ("eval.csv", "curve.csv", "model.pt", "meta.json")]
     return sorted(out)
