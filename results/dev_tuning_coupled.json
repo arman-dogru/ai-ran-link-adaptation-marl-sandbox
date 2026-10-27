@@ -1,0 +1,13 @@
+{
+  "scenario": "coupled",
+  "fixed_mcs": 7,
+  "olla_target": 0.2,
+  "olla_step": 0.1,
+  "olla_init": -2.0,
+  "dev_seeds": [
+    5000,
+    5049
+  ],
+  "fixed_se": 1.2398263733333328,
+  "olla_se": 1.6446944800000005
+}

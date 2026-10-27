@@ -1,0 +1,11 @@
+[project]
+name = "aran-la-sandbox"
+version = "0.1.0"
+description = "CPU-only multi-cell link-adaptation sandbox: OLLA baselines vs single-agent DQN vs independent and cooperative MARL"
+requires-python = ">=3.11"
+dependencies = ["numpy", "scipy", "gymnasium", "torch", "pandas", "matplotlib"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+addopts = "-q"
