@@ -1,6 +1,6 @@
 {
- "killed": 56,
- "total": 56,
+ "killed": 57,
+ "total": 57,
  "mutants": [
   {
    "file": "aran/phy.py",
@@ -155,6 +155,11 @@
   {
    "file": "aran/policies.py",
    "what": "back-off heuristic always backs off",
+   "status": "killed"
+  },
+  {
+   "file": "aran/policies.py",
+   "what": "back-off heuristic never fires",
    "status": "killed"
   },
   {
