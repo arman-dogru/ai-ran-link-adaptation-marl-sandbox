@@ -1,0 +1,286 @@
+{
+ "killed": 56,
+ "total": 56,
+ "mutants": [
+  {
+   "file": "aran/phy.py",
+   "what": "BLER is 50% (not 10%) at the threshold",
+   "status": "killed"
+  },
+  {
+   "file": "aran/phy.py",
+   "what": "BLER rises with SINR",
+   "status": "killed"
+  },
+  {
+   "file": "aran/phy.py",
+   "what": "CQI at exact threshold rounds down",
+   "status": "killed"
+  },
+  {
+   "file": "aran/phy.py",
+   "what": "genie maximises success, not goodput",
+   "status": "killed"
+  },
+  {
+   "file": "aran/phy.py",
+   "what": "pathloss not clipped at 35 m",
+   "status": "killed"
+  },
+  {
+   "file": "aran/phy.py",
+   "what": "noise figure sign",
+   "status": "killed"
+  },
+  {
+   "file": "aran/phy.py",
+   "what": "Jain not normalised by n",
+   "status": "killed"
+  },
+  {
+   "file": "aran/phy.py",
+   "what": "Doppler correlation off by 2x",
+   "status": "killed"
+  },
+  {
+   "file": "aran/env.py",
+   "what": "UEs not attached to the strongest site",
+   "status": "killed"
+  },
+  {
+   "file": "aran/env.py",
+   "what": "fading has no time correlation",
+   "status": "killed"
+  },
+  {
+   "file": "aran/env.py",
+   "what": "fading power not preserved",
+   "status": "killed"
+  },
+  {
+   "file": "aran/env.py",
+   "what": "outer load not stationary at target",
+   "status": "killed"
+  },
+  {
+   "file": "aran/env.py",
+   "what": "outer cells always on",
+   "status": "killed"
+  },
+  {
+   "file": "aran/env.py",
+   "what": "power back-off ignored",
+   "status": "killed"
+  },
+  {
+   "file": "aran/env.py",
+   "what": "CQI measured at the data power, not reference power",
+   "status": "killed"
+  },
+  {
+   "file": "aran/env.py",
+   "what": "CQI report not delayed",
+   "status": "killed"
+  },
+  {
+   "file": "aran/env.py",
+   "what": "no CQI measurement noise",
+   "status": "killed"
+  },
+  {
+   "file": "aran/env.py",
+   "what": "max-rate instead of PF",
+   "status": "killed"
+  },
+  {
+   "file": "aran/env.py",
+   "what": "PF average ignores service",
+   "status": "killed"
+  },
+  {
+   "file": "aran/env.py",
+   "what": "ACK probability inverted",
+   "status": "killed"
+  },
+  {
+   "file": "aran/env.py",
+   "what": "transmission uses a stale channel",
+   "status": "killed"
+  },
+  {
+   "file": "aran/env.py",
+   "what": "action decoding swapped",
+   "status": "killed"
+  },
+  {
+   "file": "aran/env.py",
+   "what": "MCS delta not relative to CQI",
+   "status": "killed"
+  },
+  {
+   "file": "aran/env.py",
+   "what": "neighbour power feature is own power",
+   "status": "killed"
+  },
+  {
+   "file": "aran/env.py",
+   "what": "edge KPI uses the best UEs",
+   "status": "killed"
+  },
+  {
+   "file": "aran/env.py",
+   "what": "SE not per cell",
+   "status": "killed"
+  },
+  {
+   "file": "aran/policies.py",
+   "what": "OLLA up-step wrong ratio",
+   "status": "killed"
+  },
+  {
+   "file": "aran/policies.py",
+   "what": "OLLA steps inverted",
+   "status": "killed"
+  },
+  {
+   "file": "aran/policies.py",
+   "what": "OLLA initial offset ignored",
+   "status": "killed"
+  },
+  {
+   "file": "aran/policies.py",
+   "what": "OLLA offset sign",
+   "status": "killed"
+  },
+  {
+   "file": "aran/policies.py",
+   "what": "back-off heuristic always backs off",
+   "status": "killed"
+  },
+  {
+   "file": "aran/policies.py",
+   "what": "genie reads a stale channel",
+   "status": "killed"
+  },
+  {
+   "file": "aran/agents.py",
+   "what": "IQL-team uses own reward",
+   "status": "killed"
+  },
+  {
+   "file": "aran/agents.py",
+   "what": "VDN target uses mean reward",
+   "status": "killed"
+  },
+  {
+   "file": "aran/agents.py",
+   "what": "VDN mixes by mean",
+   "status": "killed"
+  },
+  {
+   "file": "aran/agents.py",
+   "what": "not double DQN",
+   "status": "killed"
+  },
+  {
+   "file": "aran/agents.py",
+   "what": "terminal not masked (independent)",
+   "status": "killed"
+  },
+  {
+   "file": "aran/agents.py",
+   "what": "terminal not masked (VDN)",
+   "status": "killed"
+  },
+  {
+   "file": "aran/agents.py",
+   "what": "seed 0 trains on dev/eval episodes",
+   "status": "killed"
+  },
+  {
+   "file": "aran/agents.py",
+   "what": "single agent learns in every cell",
+   "status": "killed"
+  },
+  {
+   "file": "aran/agents.py",
+   "what": "training seed ignored by torch",
+   "status": "killed"
+  },
+  {
+   "file": "aran/agents.py",
+   "what": "target net never synced",
+   "status": "killed"
+  },
+  {
+   "file": "aran/agents.py",
+   "what": "replay forgets wrap-around",
+   "status": "killed"
+  },
+  {
+   "file": "aran/stats.py",
+   "what": "crossed bootstrap ignores episodes",
+   "status": "killed"
+  },
+  {
+   "file": "aran/stats.py",
+   "what": "crossed bootstrap ignores seeds",
+   "status": "killed"
+  },
+  {
+   "file": "aran/stats.py",
+   "what": "exact sign-flip one-sided",
+   "status": "killed"
+  },
+  {
+   "file": "aran/stats.py",
+   "what": "MC sign-flip p can be 0",
+   "status": "killed"
+  },
+  {
+   "file": "aran/stats.py",
+   "what": "Holm not monotone",
+   "status": "killed"
+  },
+  {
+   "file": "aran/stats.py",
+   "what": "80% CI",
+   "status": "killed"
+  },
+  {
+   "file": "scripts/aggregate.py",
+   "what": "aggregate accepts partial grid",
+   "status": "killed"
+  },
+  {
+   "file": "scripts/aggregate.py",
+   "what": "--allow-partial overwrites results/",
+   "status": "killed"
+  },
+  {
+   "file": "scripts/aggregate.py",
+   "what": "learned test on (seed, episode) cells",
+   "status": "killed"
+  },
+  {
+   "file": "scripts/aggregate.py",
+   "what": "no multiple-comparison correction",
+   "status": "killed"
+  },
+  {
+   "file": "scripts/aggregate.py",
+   "what": "significance ignores the CI",
+   "status": "killed"
+  },
+  {
+   "file": "scripts/aggregate.py",
+   "what": "episodes not aligned before pairing",
+   "status": "killed"
+  },
+  {
+   "file": "aran/scenarios.py",
+   "what": "grid check ignores the coupled scenario",
+   "status": "killed"
+  }
+ ]
+}

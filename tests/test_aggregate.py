@@ -9,7 +9,7 @@ from aran import scenarios as S
 
 
 def _touch_all(raw):
-    for rel in S.expected_main_files() + G.expected_sweep_files():
+    for rel in S.expected_main_files() + G.expected_sweep_files() + G.expected_horizon_files():
         p = raw / rel
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text("x")

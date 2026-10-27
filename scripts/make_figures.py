@@ -194,6 +194,52 @@ def proxies(res, out):
     save(fig, out, "proxies.png")
 
 
+def horizon_plot(res, out):
+    h = pd.read_csv(os.path.join(res, "horizon_summary.csv"))
+    fig, ax = plt.subplots(figsize=(6.4, 3.8))
+    for pol, g in h.groupby("policy"):
+        g = g.sort_values("episode_tti")
+        ax.errorbar(g.episode_tti, g.se, yerr=[g.se - g.lo, g.hi - g.se], marker="o", ms=4, capsize=2, color=COLOR[pol], label=LABEL[pol])
+    ax.set_xscale("log")
+    ax.set_xticks([200, 1000, 3000], ["200", "1000", "3000"])
+    ax.set_xlabel("evaluation episode length (TTIs); learners trained on 200")
+    ax.set_ylabel("SE (bit/s/Hz per cell)")
+    ax.set_title("Episode-length check, default scenario, 30 episodes (95% CIs)", fontsize=9)
+    ax.legend(fontsize=7, ncol=2)
+    fig.tight_layout()
+    save(fig, out, "horizon.png")
+
+
+def action_heatmaps(res, out, sc="default"):
+    a = pd.read_csv(os.path.join(res, "policy_actions.csv"))
+    a = a[a.scenario == sc]
+    pols = ["olla-tuned"] + list(S.LEARNERS)
+    fig, axes = plt.subplots(2, len(pols), figsize=(15, 5.6), sharex=True)
+    cq = np.arange(-1, 15)
+    for j, pol in enumerate(pols):
+        d = a[a.policy == pol]
+        D = d.pivot_table(index="delta", columns="cqi", values="count", aggfunc="sum").reindex(columns=cq).fillna(0)
+        D = D.reindex(range(int(min(-6, D.index.min())), int(max(2, D.index.max())) + 1)).fillna(0)
+        frac = D / D.sum(0).replace(0, np.nan)
+        ax = axes[0, j]
+        ax.imshow(frac.values, origin="lower", aspect="auto", cmap="magma", vmin=0, vmax=1,
+                  extent=[cq[0] - 0.5, cq[-1] + 0.5, D.index.min() - 0.5, D.index.max() + 0.5])
+        ax.set_title(LABEL[pol], fontsize=9)
+        ax.set_ylabel("MCS - CQI index" if j == 0 else "")
+        Pw = d.pivot_table(index="power_db", columns="cqi", values="count", aggfunc="sum").reindex(columns=cq).fillna(0)
+        Pw = Pw.reindex([-6.0, -3.0, 0.0]).fillna(0)
+        pf = Pw / Pw.sum(0).replace(0, np.nan)
+        ax = axes[1, j]
+        im = ax.imshow(pf.values, origin="lower", aspect="auto", cmap="magma", vmin=0, vmax=1,
+                       extent=[cq[0] - 0.5, cq[-1] + 0.5, -0.5, 2.5])
+        ax.set_yticks([0, 1, 2], ["-6", "-3", "0"])
+        ax.set_ylabel("power (dB)" if j == 0 else "")
+        ax.set_xlabel("reported CQI index (-1 = out of range)")
+    fig.colorbar(im, ax=axes, shrink=0.6, label="P(action | reported CQI)")
+    fig.suptitle(f"What the policies do ({sc} scenario, 30 eval episodes; learners pooled over 15 seeds): top = MCS offset, bottom = power")
+    save(fig, out, f"actions_{sc}.png")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--results", default=os.path.join(ROOT, "results"))
@@ -201,9 +247,10 @@ def main():
     a = ap.parse_args()
     full_summary(a.results)
     os.makedirs(a.out, exist_ok=True)
-    for f in (kpi_bars, forest, learning_curves, timeline, sweep_heatmaps, tuning_heatmap, proxies):
+    for f in (kpi_bars, forest, learning_curves, timeline, sweep_heatmaps, tuning_heatmap, proxies, horizon_plot,
+              action_heatmaps, lambda r, o: action_heatmaps(r, o, "coupled")):
         f(a.results, a.out)
-        print("ok", f.__name__)
+        print("ok", getattr(f, "__name__", "f"))
 
 
 if __name__ == "__main__":

@@ -17,6 +17,7 @@ import pandas as pd
 
 from aran import scenarios as S, stats
 from run_sweep import expected_sweep_files, SWEEP_RULES
+from run_horizon import expected_horizon_files, H_RULES
 
 KPIS = ("se", "edge", "jain", "bler", "power_db", "inr_db")
 METHODS = tuple(S.RULES) + tuple(S.LEARNERS)
@@ -30,10 +31,10 @@ FLIPS_MC = 100_000
 
 
 def check_grid(raw):
-    """Return (missing, unexpected) relative paths versus the expected main grid + sweep."""
-    want = set(S.expected_main_files()) | set(expected_sweep_files())
+    """Return (missing, unexpected) relative paths versus the expected main grid + sweep + horizon check."""
+    want = set(S.expected_main_files()) | set(expected_sweep_files()) | set(expected_horizon_files())
     have = set()
-    for sub in list(S.SCENARIOS) + ["sweep"]:
+    for sub in list(S.SCENARIOS) + ["sweep", "horizon"]:
         d = os.path.join(raw, sub)
         for dp, _, fs in os.walk(d):
             for f in fs:
@@ -150,6 +151,27 @@ def sweep(raw, seeds):
     return rows
 
 
+def horizon(raw, seeds):
+    """Mean SE per (policy, episode length), with 95% CIs (crossed bootstrap for learners, episodes for rules) and the
+    difference to tuned OLLA at the same length."""
+    ref = pd.read_csv(os.path.join(raw, "horizon", "rule_olla-tuned.csv"))
+    rows = []
+    for name in [f"rule_{r}" for r in H_RULES] + list(S.LEARNERS):
+        df = pd.read_csv(os.path.join(raw, "horizon", f"{name}.csv"))
+        for h, g in df.groupby("episode_tti"):
+            r = ref[ref.episode_tti == h].sort_values("episode_seed")["se"].to_numpy()
+            if name.startswith("rule_"):
+                X = g.sort_values("episode_seed")["se"].to_numpy()[None]
+                b1, b2 = stats.boot_1d(X[0], 2000, rng_for("h", name, h)), stats.boot_1d(X[0] - r, 2000, rng_for("hd", name, h))
+            else:
+                X = np.array([g[g.seed == s].sort_values("episode_seed")["se"].to_numpy() for s in seeds])
+                b1, b2 = stats.boot_crossed(X, 2000, rng_for("h", name, h)), stats.boot_crossed(X - r[None], 2000, rng_for("hd", name, h))
+            (lo, hi), (dlo, dhi) = stats.ci(b1), stats.ci(b2)
+            rows.append(dict(policy=name.replace("rule_", ""), episode_tti=int(h), se=float(X.mean()), lo=lo, hi=hi,
+                             diff_vs_olla=float((X - r[None]).mean()), diff_lo=dlo, diff_hi=dhi))
+    return rows
+
+
 def write_csv(path, rows):
     with open(path, "w", newline="") as f:
         w = csv.DictWriter(f, list(rows[0]))
@@ -191,6 +213,7 @@ def main(argv=None):
                | dict(ci_lo=c["ci"][0], ci_hi=c["ci"][1]) for c in summ["comparisons"]])
     write_csv(os.path.join(a.out, "curves_summary.csv"), curves(a.raw, seeds))
     write_csv(os.path.join(a.out, "sweep_summary.csv"), sweep(a.raw, seeds))
+    write_csv(os.path.join(a.out, "horizon_summary.csv"), horizon(a.raw, seeds))
     print(f"wrote {a.out}/summary.json ({len(summ['comparisons'])} comparisons)")
     return 0
 
