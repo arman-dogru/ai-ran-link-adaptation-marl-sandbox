@@ -225,3 +225,12 @@ def test_observation_features():
     assert np.allclose(o[:, 0], (env.rep[u] + 1) / 15)
     assert np.allclose(o[:, 11], env.rep[u] >= 14)
     assert np.allclose(o[:, 1], env.olla10[u] / 10, atol=1e-6)
+
+
+@pytest.mark.parametrize("kw", [dict(n_cells=8), dict(ues_per_cell=0), dict(episode_tti=30_000), dict(cqi_delay=-1),
+                                dict(outer_load=1.5), dict(mcs_deltas=(1, 2)), dict(power_levels_db=(-3.0, 0.0)),
+                                dict(episode_tti=200.0)])
+def test_config_caps(kw):
+    with pytest.raises(ValueError):
+        Config(**kw)
+    Config()  # default is valid

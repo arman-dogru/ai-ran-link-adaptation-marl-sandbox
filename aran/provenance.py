@@ -30,6 +30,11 @@ def git_state(root=ROOT, files=CODE_FILES):
     return sha, dirty
 
 
+def cfg_dict(cfg):
+    """Config as plain JSON types (tuples -> lists), so it compares equal after a round trip through meta.json."""
+    return json.loads(json.dumps(cfg.to_dict()))
+
+
 def tuning_params(tun):
     return {k: tun[k] for k in TUNING_KEYS}
 
@@ -37,7 +42,7 @@ def tuning_params(tun):
 def run_meta(cfg, tun, extra_files=(), **extra):
     sha, dirty = git_state(files=CODE_FILES + tuple(extra_files))
     return dict(code_hash=code_hash(files=CODE_FILES + tuple(extra_files)), git_sha=sha, git_dirty=dirty,
-                config=cfg.to_dict(), tuning=tuning_params(tun), **extra)
+                config=cfg_dict(cfg), tuning=tuning_params(tun), **extra)
 
 
 def write_meta(path, meta):

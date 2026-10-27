@@ -1,6 +1,7 @@
-"""Aggregate results/raw into results/summary.json + CSV tables. Refuses (exit 2, writes nothing) unless the raw
-directory holds exactly the expected grid (no missing, no unexpected files). --allow-partial is for debugging only
-and must write to a separate --out directory, never over the committed results/.
+"""Aggregate results/raw into results/summary.json + CSV tables. Refuses (exit 2, writes nothing, creates no
+directory) unless the raw directory holds exactly the expected grid (no missing, no unexpected files) and every
+run's meta.json has consistent, clean provenance (same code hash per kind, git tree clean, config and tuned rule
+parameters equal to the current ones). There is no partial mode.
 
 Statistics (see docs/method.md):
   * learned methods: 15 training seeds x 100 shared evaluation episodes (crossed). 95% CIs: two-way bootstrap
@@ -16,6 +17,7 @@ import numpy as np
 import pandas as pd
 
 from aran import scenarios as S, stats
+from aran import provenance as PV
 from run_sweep import expected_sweep_files, SWEEP_RULES
 from run_horizon import expected_horizon_files, H_RULES
 
@@ -42,6 +44,32 @@ def check_grid(raw):
     return sorted(want - have), sorted(have - want)
 
 
+def check_provenance(raw):
+    """Problems (list of strings) with the meta.json files of a complete grid."""
+    probs, hashes = [], {}
+    tun = {sc: PV.tuning_params(json.load(open(os.path.join(os.path.dirname(os.path.realpath(raw)), f"dev_tuning_{sc}.json"))))
+           for sc in S.SCENARIOS}
+    cfgs = {sc: PV.cfg_dict(S.scenario_config(sc, os.path.join(ROOT, "config/default.json"))) for sc in S.SCENARIOS}
+    for rel in S.expected_main_files() + expected_sweep_files() + expected_horizon_files():
+        if not rel.endswith("meta.json"):
+            continue
+        m = json.load(open(os.path.join(raw, rel)))
+        sub = rel.split("/")[0]
+        kind = sub if sub in ("sweep", "horizon") else "main"
+        hashes.setdefault(kind, set()).add(m.get("code_hash"))
+        sc = "default" if kind != "main" else sub
+        if m.get("git_dirty", True):
+            probs.append(f"{rel}: produced from a dirty tree")
+        if m.get("tuning") != tun[sc]:
+            probs.append(f"{rel}: tuned rule parameters differ from results/dev_tuning_{sc}.json")
+        if kind == "main" and m.get("config") != cfgs[sc]:
+            probs.append(f"{rel}: config differs from scenario {sc}")
+    for kind, h in hashes.items():
+        if len(h) != 1:
+            probs.append(f"{kind}: {len(h)} different code hashes (mixed provenance)")
+    return probs
+
+
 def rng_for(*key):
     return np.random.default_rng(zlib.crc32("|".join(map(str, key)).encode()))
 
@@ -61,8 +89,11 @@ def load_matrix(raw, sc, method, kpi, seeds):
     return np.array(rows), ep
 
 
-def compare(Ma, Mb, learned_a, learned_b, rng):
-    """Difference a - b. Returns dict(diff, ci, p, unit, n, wins)."""
+def compare(Ma, Mb, learned_a, learned_b, rng, ep_a=None, ep_b=None):
+    """Difference a - b on episode-aligned matrices (ep_a / ep_b: the episode seed of each column, must be equal).
+    Returns dict(diff, ci, p, unit, n, wins, losses); ties count as neither."""
+    if ep_a is not None or ep_b is not None:
+        assert np.array_equal(np.asarray(ep_a), np.asarray(ep_b)), "A and B are not paired on the same episodes"
     if learned_a or learned_b:
         D = Ma - Mb  # broadcasting a rule's (1, E) row over seeds
         per_seed = D.mean(1)
@@ -101,9 +132,9 @@ def summarise(raw, seeds):
             meth[m]["n_episodes"] = int(M.shape[1])
         out["scenarios"][sc] = {"methods": meth}
         for a, b, k in COMPARISONS:
-            Ma, _ = load_matrix(raw, sc, a, k, seeds)
-            Mb, _ = load_matrix(raw, sc, b, k, seeds)
-            c = compare(Ma, Mb, a in S.LEARNERS, b in S.LEARNERS, rng_for("cmp", sc, a, b, k))
+            Ma, ea = load_matrix(raw, sc, a, k, seeds)
+            Mb, eb = load_matrix(raw, sc, b, k, seeds)
+            c = compare(Ma, Mb, a in S.LEARNERS, b in S.LEARNERS, rng_for("cmp", sc, a, b, k), ea, eb)
             base = float(Mb.mean())
             c.update(scenario=sc, a=a, b=b, metric=k, rel_pct=100 * c["diff"] / base if base else float("nan"))
             out["comparisons"].append(c)
@@ -183,7 +214,6 @@ def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--raw", default=os.path.join(ROOT, "results/raw"))
     ap.add_argument("--out", default=os.path.join(ROOT, "results"))
-    ap.add_argument("--allow-partial", action="store_true", help="debug only; requires --out other than results/")
     a = ap.parse_args(argv)
     missing, extra = check_grid(a.raw)
     if missing or extra:
@@ -191,14 +221,14 @@ def main(argv=None):
             print(f"refusing to aggregate: {len(extra)} unexpected files under {a.raw}, e.g. {extra[:3]}", file=sys.stderr)
         if missing:
             print(f"refusing to aggregate: grid incomplete, {len(missing)} expected files missing, e.g. {missing[:3]}", file=sys.stderr)
-        if not a.allow_partial:
-            return 2
-        if os.path.abspath(a.out) == os.path.abspath(os.path.join(ROOT, "results")):
-            print("--allow-partial must write to a separate --out directory", file=sys.stderr)
-            return 2
-    os.makedirs(a.out, exist_ok=True)
+        return 2
+    probs = check_provenance(a.raw)
+    if probs:
+        print(f"refusing to aggregate: {len(probs)} provenance problems, e.g. {probs[:3]}", file=sys.stderr)
+        return 2
     seeds = list(S.SEEDS)
     summ = summarise(a.raw, seeds)
+    os.makedirs(a.out, exist_ok=True)
     json.dump(summ, open(os.path.join(a.out, "summary.json"), "w"), indent=1, sort_keys=True)
     rows = []
     for sc, v in summ["scenarios"].items():

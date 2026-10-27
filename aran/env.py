@@ -44,8 +44,8 @@ class Config:
 
     def __post_init__(self):
         """Size caps so any run stays CPU-sized (the experiments use 3 cells x 4 UEs x 200 TTIs; the horizon check
-        evaluates up to 3000 TTIs)."""
-        caps = dict(n_cells=(1, 7), ues_per_cell=(1, 16), n_outer=(0, 12), episode_tti=(1, 5000), cqi_delay=(0, 64))
+        evaluates up to 3000 TTIs, one statistics test uses 20000 TTIs of a 1-UE cell)."""
+        caps = dict(n_cells=(1, 7), ues_per_cell=(1, 16), n_outer=(0, 12), episode_tti=(1, 20_000), cqi_delay=(0, 64))
         for k, (lo, hi) in caps.items():
             v = getattr(self, k)
             if not (isinstance(v, int) and lo <= v <= hi):

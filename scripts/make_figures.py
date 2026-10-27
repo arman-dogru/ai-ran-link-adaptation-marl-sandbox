@@ -24,9 +24,13 @@ SC_TITLE = {"default": "default (3 cells + bursty outer ring)", "coupled": "coup
 
 
 def full_summary(res):
+    """Exit 2 (like readme_tables.py) unless summary.json covers every seed, scenario and method."""
     s = json.load(open(os.path.join(res, "summary.json")))
-    if s.get("grid", {}).get("seeds") != list(S.SEEDS) or set(s["scenarios"]) != set(S.SCENARIOS):
-        sys.exit("refusing: summary.json does not cover the full grid (run scripts/aggregate.py on a complete grid)")
+    want = set(S.RULES) | set(S.LEARNERS)
+    if s.get("grid", {}).get("seeds") != list(S.SEEDS) or set(s.get("scenarios", {})) != set(S.SCENARIOS) or \
+            any(set(v["methods"]) != want for v in s["scenarios"].values()):
+        print("refusing: summary.json does not cover the full grid (run scripts/aggregate.py on a complete grid)", file=sys.stderr)
+        sys.exit(2)
     return s
 
 
@@ -57,22 +61,30 @@ def kpi_bars(res, out):
 
 
 def forest(res, out):
+    """One panel per (metric, scenario) with its own x-axis, so the small edge differences stay visible (review m8)."""
     c = pd.read_csv(os.path.join(res, "comparisons.csv"))
-    fig, axes = plt.subplots(1, 2, figsize=(11, 6), sharey=True)
-    lab = [f"{LABEL[a]} - {LABEL[b]} [{m}]" for a, b, m in zip(c.a, c.b, c.metric)]
-    for j, sc in enumerate(S.SCENARIOS):
-        d = c[c.scenario == sc].reset_index(drop=True)
-        ax = axes[j]
-        y = np.arange(len(d))[::-1]
-        col = np.where(d.significant, np.where(d["diff"] > 0, "#2e8b57", "#c0392b"), "#999999")
-        for yi, (_, r), cc in zip(y, d.iterrows(), col):
-            ax.errorbar(r["diff"], yi, xerr=[[r["diff"] - r.ci_lo], [r.ci_hi - r["diff"]]], fmt="none", ecolor=cc, capsize=2)
-        ax.scatter(d["diff"], y, c=col, zorder=3, s=18)
-        ax.axvline(0, color="k", lw=0.6)
-        ax.set_yticks(y, [f"{LABEL[a]} - {LABEL[b]} [{m}]" for a, b, m in zip(d.a, d.b, d.metric)])
-        ax.set_xlabel("difference (bit/s/Hz)")
-        ax.set_title(SC_TITLE[sc])
-    fig.suptitle("Pre-registered comparisons (one Holm family of 34): green/red = Holm p < 0.05 and CI excludes 0; grey = not significant")
+    metrics = [("se", "SE difference (bit/s/Hz per cell)"), ("edge", "edge-throughput difference (bit/s/Hz)")]
+    n = {k: int((c[(c.scenario == "default")].metric == k).sum()) for k, _ in metrics}
+    fig, axes = plt.subplots(2, 2, figsize=(12, 7.6), sharey="row", gridspec_kw={"height_ratios": [n["se"], n["edge"]]})
+    for i, (k, xl) in enumerate(metrics):
+        for j, sc in enumerate(S.SCENARIOS):
+            d = c[(c.scenario == sc) & (c.metric == k)].reset_index(drop=True)
+            ax = axes[i, j]
+            y = np.arange(len(d))[::-1]
+            col = np.where(d.significant, np.where(d["diff"] > 0, "#2e8b57", "#c0392b"), "#999999")
+            for yi, (_, r), cc in zip(y, d.iterrows(), col):
+                ax.errorbar(r["diff"], yi, xerr=[[r["diff"] - r.ci_lo], [r.ci_hi - r["diff"]]], fmt="none", ecolor=cc, capsize=2)
+                ax.annotate(f"{r.rel_pct:+.1f}%", (r.ci_hi, yi), xytext=(4, -3), textcoords="offset points", fontsize=7, color=cc)
+            ax.scatter(d["diff"], y, c=col, zorder=3, s=18)
+            ax.axvline(0, color="k", lw=0.6)
+            ax.set_yticks(y, [f"{LABEL[a]} - {LABEL[b]}" for a, b in zip(d.a, d.b)])
+            ax.set_xlabel(xl)
+            lim = 1.25 * max(abs(d.ci_lo).max(), abs(d.ci_hi).max())
+            ax.set_xlim(-lim, lim)
+            if i == 0:
+                ax.set_title(SC_TITLE[sc])
+    fig.suptitle("Pre-registered comparisons (one Holm family of 34), separate x-axis per metric; labels = relative difference.\n"
+                 "green/red = Holm p < 0.05 and 95% CI excludes 0; grey = not significant")
     fig.tight_layout()
     save(fig, out, "diff_forest.png")
 
@@ -235,7 +247,7 @@ def action_heatmaps(res, out, sc="default"):
                        extent=[cq[0] - 0.5, cq[-1] + 0.5, -0.5, 2.5])
         ax.set_yticks([0, 1, 2], ["-6", "-3", "0"])
         ax.set_ylabel("power (dB)" if j == 0 else "")
-        ax.set_xlabel("reported CQI index")
+        ax.set_xlabel("reported CQI index (0-14 = LTE CQI 1-15)")
     fig.colorbar(im, ax=axes, shrink=0.6, label="P(action | reported CQI)")
     fig.suptitle(f"What the policies do ({sc} scenario, 30 eval episodes; learners pooled over 15 seeds): top = MCS offset, bottom = power; CQI -1 = out of range")
     save(fig, out, f"actions_{sc}.png")

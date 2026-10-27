@@ -37,17 +37,59 @@ def test_guard_refuses_extra(tmp_path, capsys):
     assert not out.exists()
 
 
-def test_allow_partial_cannot_overwrite_results(tmp_path):
+def test_partial_mode_is_gone_and_empty_raw_refused(tmp_path):
     raw = tmp_path / "raw"
     raw.mkdir()
-    assert G.main(["--raw", str(raw), "--out", os.path.join(G.ROOT, "results"), "--allow-partial"]) == 2
+    out = tmp_path / "out"
+    assert G.main(["--raw", str(raw), "--out", str(out)]) == 2 and not out.exists()
+    with pytest.raises(SystemExit):
+        G.main(["--raw", str(raw), "--out", str(out), "--allow-partial"])
+
+
+def _good_metas(root):
+    import json
+    from aran import provenance as PV
+    raw = root / "raw"
+    _touch_all(raw)
+    for sc in S.SCENARIOS:
+        json.dump(dict(fixed_mcs=7, olla_target=0.2, olla_step=0.1, olla_init=-2.0), open(root / f"dev_tuning_{sc}.json", "w"))
+    tun = dict(fixed_mcs=7, olla_target=0.2, olla_step=0.1, olla_init=-2.0)
+    for rel in S.expected_main_files() + G.expected_sweep_files() + G.expected_horizon_files():
+        if rel.endswith("meta.json"):
+            sub = rel.split("/")[0]
+            sc = sub if sub in S.SCENARIOS else "default"
+            cfg = PV.cfg_dict(S.scenario_config(sc, os.path.join(G.ROOT, "config/default.json")))
+            json.dump(dict(code_hash=f"h-{sub if sub in ('sweep', 'horizon') else 'main'}", git_dirty=False, config=cfg, tuning=tun),
+                      open(raw / rel, "w"))
+    return raw
+
+
+def test_provenance_clean_grid_passes(tmp_path):
+    assert G.check_provenance(str(_good_metas(tmp_path))) == []
+
+
+@pytest.mark.parametrize("field,value,needle", [("code_hash", "other", "mixed provenance"), ("git_dirty", True, "dirty"),
+                                                ("tuning", {"fixed_mcs": 6}, "tuned rule parameters"),
+                                                ("config", {"n_cells": 2}, "config differs")])
+def test_provenance_problems_refused(tmp_path, capsys, field, value, needle):
+    import json
+    raw = _good_metas(tmp_path)
+    p = raw / "coupled" / "vdn_s4" / "meta.json"
+    m = json.load(open(p))
+    m[field] = value
+    json.dump(m, open(p, "w"))
+    probs = G.check_provenance(str(raw))
+    assert any(needle in x for x in probs)
+    out = tmp_path / "out"
+    assert G.main(["--raw", str(raw), "--out", str(out)]) == 2 and not out.exists()
+    assert "provenance" in capsys.readouterr().err
 
 
 def test_check_grid_complete(tmp_path):
     raw = tmp_path / "raw"
     _touch_all(raw)
     assert G.check_grid(str(raw)) == ([], [])
-    n = len(S.SCENARIOS) * (len(S.RULES) + 3 * len(S.LEARNERS) * len(S.SEEDS))
+    n = len(S.SCENARIOS) * (2 * len(S.RULES) + 4 * len(S.LEARNERS) * len(S.SEEDS))
     assert len(S.expected_main_files()) == n
 
 
