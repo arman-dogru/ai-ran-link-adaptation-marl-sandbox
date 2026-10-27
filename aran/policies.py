@@ -64,8 +64,10 @@ class OLLA(Policy):
         mcs = self.mcs_for(env)
         p = np.zeros(env.cfg.n_cells, int)
         if self.backoff:
-            # heuristic: when the UE already reports the top CQI and OLLA has headroom, use the lowest power
-            top = (env.rep[env.sched] >= phy.N_MCS - 1) & (mcs >= phy.N_MCS - 1)
+            # heuristic: when the scheduled UE reports the top CQI (>= 22.7 dB measured on full-power reference
+            # signals) the cell uses its lowest power level. (A first version also required OLLA to pick the top
+            # MCS; with the tuned -2 dB initial offset it never fired - see docs/method.md.)
+            top = env.rep[env.sched] >= phy.N_MCS - 1
             p = np.where(top, len(env.cfg.power_levels_db) - 1, 0)
         return mcs, p
 

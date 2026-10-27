@@ -69,11 +69,14 @@ def main():
     ap.add_argument("--workers", type=int, default=7)
     ap.add_argument("--scenarios", nargs="*", default=list(S.SCENARIOS))
     ap.add_argument("--force", action="store_true")
+    ap.add_argument("--rules", nargs="*", default=list(S.RULES), help="rule baselines to run")
+    ap.add_argument("--no-learners", action="store_true")
     a = ap.parse_args()
     jobs = []
     for sc in a.scenarios:
-        jobs += [(sc, "rule", r, 0, a.out, a.force) for r in S.RULES]
-        jobs += [(sc, "learn", m, s, a.out, a.force) for s in S.SEEDS for m in S.LEARNERS]
+        jobs += [(sc, "rule", r, 0, a.out, a.force) for r in a.rules]
+        if not a.no_learners:
+            jobs += [(sc, "learn", m, s, a.out, a.force) for s in S.SEEDS for m in S.LEARNERS]
     with Pool(a.workers) as pool:
         for i, (d, dt) in enumerate(pool.imap_unordered(job, jobs), 1):
             print(f"[{time.strftime('%H:%M:%S')}] {i}/{len(jobs)} {os.path.relpath(d, a.out)} {dt:.0f}s", flush=True)

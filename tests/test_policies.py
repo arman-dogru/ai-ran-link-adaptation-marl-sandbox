@@ -68,14 +68,17 @@ def test_genie_uses_true_sinr():
 def test_backoff_only_at_top_cqi():
     env = MultiCellLAEnv(CFG)
     env.reset(seed=5)
-    pol = P.OLLA(backoff=True)
+    pol = P.OLLA(backoff=True, init=-2.0)
     pol.reset(env)
+    fired = False
     for _ in range(100):
         m, p = pol.act(env, None)
-        top = (env.rep[env.sched] >= 14) & (m >= 14)
+        top = env.rep[env.sched] >= 14
         assert np.array_equal(p, np.where(top, 2, 0))
+        fired = fired or top.any()
         _, _, _, _, info = env.step_raw(m, p)
         pol.update(env, info)
+    assert fired
 
 
 def test_genie_beats_causal_rules():
