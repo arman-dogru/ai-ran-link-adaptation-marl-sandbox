@@ -1,291 +1,502 @@
 {
- "killed": 57,
- "total": 57,
+ "control": {
+  "exit": 0,
+  "summary": ".................................                                        [100%]"
+ },
+ "killed": 81,
+ "total": 82,
  "mutants": [
   {
    "file": "aran/phy.py",
    "what": "BLER is 50% (not 10%) at the threshold",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/phy.py",
    "what": "BLER rises with SINR",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/phy.py",
    "what": "CQI at exact threshold rounds down",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/phy.py",
    "what": "genie maximises success, not goodput",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/phy.py",
    "what": "pathloss not clipped at 35 m",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/phy.py",
    "what": "noise figure sign",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/phy.py",
    "what": "Jain not normalised by n",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/phy.py",
    "what": "Doppler correlation off by 2x",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/env.py",
    "what": "UEs not attached to the strongest site",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/env.py",
    "what": "fading has no time correlation",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/env.py",
    "what": "fading power not preserved",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/env.py",
    "what": "outer load not stationary at target",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/env.py",
    "what": "outer cells always on",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/env.py",
    "what": "power back-off ignored",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/env.py",
    "what": "CQI measured at the data power, not reference power",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/env.py",
    "what": "CQI report not delayed",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/env.py",
    "what": "no CQI measurement noise",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/env.py",
    "what": "max-rate instead of PF",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/env.py",
    "what": "PF average ignores service",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/env.py",
    "what": "ACK probability inverted",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/env.py",
    "what": "transmission uses a stale channel",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/env.py",
    "what": "action decoding swapped",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/env.py",
    "what": "MCS delta not relative to CQI",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/env.py",
    "what": "neighbour power feature is own power",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/env.py",
    "what": "edge KPI uses the best UEs",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/env.py",
    "what": "SE not per cell",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/policies.py",
    "what": "OLLA up-step wrong ratio",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/policies.py",
    "what": "OLLA steps inverted",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/policies.py",
    "what": "OLLA initial offset ignored",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/policies.py",
    "what": "OLLA offset sign",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/policies.py",
    "what": "back-off heuristic always backs off",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/policies.py",
    "what": "back-off heuristic never fires",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/policies.py",
    "what": "genie reads a stale channel",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/agents.py",
    "what": "IQL-team uses own reward",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/agents.py",
    "what": "VDN target uses mean reward",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/agents.py",
    "what": "VDN mixes by mean",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/agents.py",
    "what": "not double DQN",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/agents.py",
    "what": "terminal not masked (independent)",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/agents.py",
    "what": "terminal not masked (VDN)",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/agents.py",
    "what": "seed 0 trains on dev/eval episodes",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/agents.py",
    "what": "single agent learns in every cell",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/agents.py",
    "what": "training seed ignored by torch",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/agents.py",
    "what": "target net never synced",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/agents.py",
    "what": "replay forgets wrap-around",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/stats.py",
    "what": "crossed bootstrap ignores episodes",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/stats.py",
    "what": "crossed bootstrap ignores seeds",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/stats.py",
    "what": "exact sign-flip one-sided",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/stats.py",
    "what": "MC sign-flip p can be 0",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/stats.py",
    "what": "Holm not monotone",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/stats.py",
    "what": "80% CI",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "scripts/aggregate.py",
-   "what": "aggregate accepts partial grid",
-   "status": "killed"
+   "what": "aggregate accepts a partial grid",
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "scripts/aggregate.py",
-   "what": "--allow-partial overwrites results/",
-   "status": "killed"
+   "what": "aggregate creates --out before refusing",
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "scripts/aggregate.py",
    "what": "learned test on (seed, episode) cells",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "scripts/aggregate.py",
    "what": "no multiple-comparison correction",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "scripts/aggregate.py",
    "what": "significance ignores the CI",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "scripts/aggregate.py",
    "what": "episodes not aligned before pairing",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
   },
   {
    "file": "aran/scenarios.py",
    "what": "grid check ignores the coupled scenario",
-   "status": "killed"
+   "status": "killed",
+   "exit": 1
+  },
+  {
+   "file": "aran/agents.py",
+   "what": "R1 learners train on the evaluation episodes",
+   "status": "killed",
+   "exit": 1
+  },
+  {
+   "file": "scripts/run_grid.py",
+   "what": "R2 grid evaluates on dev seeds",
+   "status": "killed",
+   "exit": 1
+  },
+  {
+   "file": "scripts/tune_rules.py",
+   "what": "R3 OLLA tuned on evaluation episodes",
+   "status": "killed",
+   "exit": 1
+  },
+  {
+   "file": "aran/env.py",
+   "what": "R4 obs[0] = true current-channel CQI (genie leak)",
+   "status": "killed",
+   "exit": 1
+  },
+  {
+   "file": "aran/env.py",
+   "what": "R5 trend feature leaks future CQI",
+   "status": "killed",
+   "exit": 1
+  },
+  {
+   "file": "aran/env.py",
+   "what": "R6 CQI delay off by one",
+   "status": "killed",
+   "exit": 1
+  },
+  {
+   "file": "scripts/aggregate.py",
+   "what": "R7 relative % uses the wrong base",
+   "status": "killed",
+   "exit": 1
+  },
+  {
+   "file": "scripts/aggregate.py",
+   "what": "R8 ties counted as wins",
+   "status": "killed",
+   "exit": 1
+  },
+  {
+   "file": "scripts/aggregate.py",
+   "what": "R9 one-sided p for learners",
+   "status": "killed",
+   "exit": 1
+  },
+  {
+   "file": "scripts/aggregate.py",
+   "what": "R10 Holm family per scenario (17, not 34)",
+   "status": "killed",
+   "exit": 1
+  },
+  {
+   "file": "aran/agents.py",
+   "what": "R11 replay never marks terminal",
+   "status": "killed",
+   "exit": 1
+  },
+  {
+   "file": "aran/agents.py",
+   "what": "R12 deployed policy ignores power action",
+   "status": "killed",
+   "exit": 1
+  },
+  {
+   "file": "aran/policies.py",
+   "what": "R13 revert to strict back-off rule",
+   "status": "killed",
+   "exit": 1
+  },
+  {
+   "file": "aran/env.py",
+   "what": "R14 CQI ignores neighbours' actual power",
+   "status": "killed",
+   "exit": 1
+  },
+  {
+   "file": "scripts/aggregate.py",
+   "what": "R15 rule row mis-paired with learner episodes",
+   "status": "killed",
+   "exit": 1
+  },
+  {
+   "file": "aran/agents.py",
+   "what": "R16 IQL-team uses summed reward",
+   "status": "killed",
+   "exit": 1
+  },
+  {
+   "file": "scripts/tune_rules.py",
+   "what": "tune_rules defaults to evaluation episodes",
+   "status": "killed",
+   "exit": 1
+  },
+  {
+   "file": "scripts/tune_rules.py",
+   "what": "tuning JSON does not record the seeds used",
+   "status": "killed",
+   "exit": 1
+  },
+  {
+   "file": "aran/provenance.py",
+   "what": "stale results silently skipped",
+   "status": "killed",
+   "exit": 1
+  },
+  {
+   "file": "aran/provenance.py",
+   "what": "code hash ignores file contents",
+   "status": "SURVIVED",
+   "exit": 0
+  },
+  {
+   "file": "scripts/aggregate.py",
+   "what": "aggregate accepts mixed code hashes",
+   "status": "killed",
+   "exit": 1
+  },
+  {
+   "file": "scripts/aggregate.py",
+   "what": "aggregate accepts a dirty tree",
+   "status": "killed",
+   "exit": 1
+  },
+  {
+   "file": "scripts/aggregate.py",
+   "what": "compare() does not check episode pairing",
+   "status": "killed",
+   "exit": 1
+  },
+  {
+   "file": "aran/env.py",
+   "what": "config size caps removed",
+   "status": "killed",
+   "exit": 1
+  },
+  {
+   "file": "scripts/make_figures.py",
+   "what": "make_figures accepts a partial summary",
+   "status": "killed",
+   "exit": 1
   }
  ]
 }

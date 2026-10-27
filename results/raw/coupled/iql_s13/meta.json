@@ -1,0 +1,58 @@
+{
+ "backfilled": true,
+ "backfilled_at": "7b23b1978e1de005f6440190298e0475af423e4f",
+ "code_hash": "3363da0e980af236201c8ab219389f43a290e77c6644409d698acb9936ceb0b9",
+ "config": {
+  "bw_hz": 10000000.0,
+  "cqi_delay": 4,
+  "cqi_noise_db": 1.0,
+  "episode_tti": 200,
+  "fc_hz": 3500000000.0,
+  "isd_m": 500.0,
+  "mcs_deltas": [
+   -4,
+   -3,
+   -2,
+   -1,
+   0,
+   1,
+   2
+  ],
+  "n_cells": 3,
+  "n_outer": 0,
+  "nf_db": 9.0,
+  "outer_burst_tti": 20.0,
+  "outer_load": 0.5,
+  "outer_ring_frac": 2.0,
+  "pf_window": 50.0,
+  "power_levels_db": [
+   0.0,
+   -3.0,
+   -6.0
+  ],
+  "shadow_db": 8.0,
+  "speed_kmh": 30.0,
+  "tti_s": 0.001,
+  "tx_dbm": 46.0,
+  "ue_radius_frac": 0.9,
+  "ues_per_cell": 4
+ },
+ "eval_seeds": [
+  10000,
+  10099
+ ],
+ "git_dirty": false,
+ "git_sha": "7b23b1978e1de005f6440190298e0475af423e4f",
+ "kind": "learn",
+ "method": "iql",
+ "scenario": "coupled",
+ "seed": 13,
+ "train_episodes": 1000,
+ "tuning": {
+  "fixed_mcs": 7,
+  "olla_init": -2.0,
+  "olla_step": 0.1,
+  "olla_target": 0.2
+ },
+ "verified_by": "results/provenance_check.json"
+}
