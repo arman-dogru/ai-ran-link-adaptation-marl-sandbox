@@ -1,5 +1,7 @@
-"""Single-edit mutation check: each mutant is applied to a throw-away copy of aran/, scripts/ and tests/ (the working
-tree is never touched) and `pytest -x` must fail. Writes results/mutation_check.json; exit 1 if any mutant survives."""
+"""Single-edit mutation check: each mutant is applied to a throw-away copy of aran/, scripts/, tests/, config/ and the
+committed results/ the tests read (the working tree is never touched) and `pytest -x` must FAIL TESTS (exit code 1;
+any other exit code is reported as ERROR, not as killed). An unmutated control copy runs first and must pass.
+Writes results/mutation_check.json; exit 1 if the control fails or any mutant is not killed."""
 import json, os, shutil, subprocess, sys, tempfile
 from concurrent.futures import ThreadPoolExecutor
 
@@ -55,39 +57,88 @@ M = [  # (file, original, mutant, what it breaks)
     ("aran/stats.py", "    return float((np.sum(np.abs(null) >= obs - 1e-12) + 1) / (flips + 1))", "    return float(np.sum(np.abs(null) >= obs - 1e-12) / flips)", "MC sign-flip p can be 0"),
     ("aran/stats.py", "        run = max(run, min(1.0, (k - r) * p[i]))", "        run = min(1.0, (k - r) * p[i])", "Holm not monotone"),
     ("aran/stats.py", "def ci(boot, lo=2.5, hi=97.5):", "def ci(boot, lo=10, hi=90):", "80% CI"),
-    ("scripts/aggregate.py", "        if not a.allow_partial:\n            return 2", "        if not a.allow_partial:\n            pass", "aggregate accepts partial grid"),
-    ("scripts/aggregate.py", "        if os.path.abspath(a.out) == os.path.abspath(os.path.join(ROOT, \"results\")):", "        if False:", "--allow-partial overwrites results/"),
+    ("scripts/aggregate.py", "    if missing or extra:", "    if False:", "aggregate accepts a partial grid"),
+    ("scripts/aggregate.py", "    missing, extra = check_grid(a.raw)", "    os.makedirs(a.out, exist_ok=True); missing, extra = check_grid(a.raw)", "aggregate creates --out before refusing"),
     ("scripts/aggregate.py", "        p = stats.signflip_p(per_seed, 2 ** len(per_seed), rng)", "        p = stats.signflip_p(D.ravel(), FLIPS_MC, rng)", "learned test on (seed, episode) cells"),
     ("scripts/aggregate.py", "    adj = stats.holm([c[\"p\"] for c in comps])", "    adj = [c[\"p\"] for c in comps]", "no multiple-comparison correction"),
     ("scripts/aggregate.py", "        c[\"significant\"] = bool(q < 0.05 and (c[\"ci\"][0] > 0 or c[\"ci\"][1] < 0))", "        c[\"significant\"] = bool(q < 0.05)", "significance ignores the CI"),
     ("scripts/aggregate.py", "        df = pd.read_csv(os.path.join(raw, sc, f\"{method}_s{s}\", \"eval.csv\")).sort_values(\"episode_seed\")", "        df = pd.read_csv(os.path.join(raw, sc, f\"{method}_s{s}\", \"eval.csv\"))", "episodes not aligned before pairing"),
     ("aran/scenarios.py", "    out = []\n    for sc in scenarios:", "    out = []\n    for sc in scenarios[:1]:", "grid check ignores the coupled scenario"),
+    # --- review r1 (Peer Reviewer my_mutants.py R1-R16, adapted to the current code) ---
+    ("aran/agents.py", "        obs, _ = env.reset(seed=train_episode_seed(seed, ep))", "        obs, _ = env.reset(seed=10_000 + ep % 100)", "R1 learners train on the evaluation episodes"),
+    ("scripts/run_grid.py", "    return list(A.EVAL_SEEDS)", "    return list(A.DEV_SEEDS)", "R2 grid evaluates on dev seeds"),
+    ("scripts/tune_rules.py", "    se = _score(MultiCellLAEnv(cfg), P.OLLA(t, st, init=i0), seeds, used)", "    se = _score(MultiCellLAEnv(cfg), P.OLLA(t, st, init=i0), A.EVAL_SEEDS, used)", "R3 OLLA tuned on evaluation episodes"),
+    ("aran/env.py", "        o[:, 0] = (self.rep[u] + 1) / 15.0", "        o[:, 0] = (phy.cqi_from_sinr(self.sinr_db(self.t + cfg.cqi_delay, self.power_db, u)[0]) + 1) / 15.0", "R4 obs[0] = true current-channel CQI (genie leak)"),
+    ("aran/env.py", "        o[:, 3] = (self.rep[u] - self.prev_rep[u]) / 5.0", "        o[:, 3] = (phy.cqi_from_sinr(self.sinr_db(self.t + cfg.cqi_delay, self.power_db, u)[0]) - self.rep[u]) / 5.0", "R5 trend feature leaks future CQI"),
+    ("aran/env.py", "        rep = phy.cqi_from_sinr(self.meas[self.t])", "        rep = phy.cqi_from_sinr(self.meas[min(self.t + 1, len(self.meas) - 1)])", "R6 CQI delay off by one"),
+    ("scripts/aggregate.py", "            base = float(Mb.mean())", "            base = float(Ma.mean())", "R7 relative % uses the wrong base"),
+    ("scripts/aggregate.py", "wins=int((per_seed > 0).sum())", "wins=int((per_seed >= 0).sum())", "R8 ties counted as wins"),
+    ("scripts/aggregate.py", "        p = stats.signflip_p(per_seed, 2 ** len(per_seed), rng)", "        p = stats.signflip_p(per_seed, 2 ** len(per_seed), rng) / 2", "R9 one-sided p for learners"),
+    ("scripts/aggregate.py", "    holm_family(out[\"comparisons\"])", "    [holm_family([c for c in out[\"comparisons\"] if c[\"scenario\"] == sc]) for sc in S.SCENARIOS]", "R10 Holm family per scenario (17, not 34)"),
+    ("aran/agents.py", "            buf.add(lo, a, r, obs2[:n_learn], float(done))", "            buf.add(lo, a, r, obs2[:n_learn], 0.0)", "R11 replay never marks terminal"),
+    ("aran/agents.py", "        return np.clip(env.base_mcs() + delta, 0, 14), pidx", "        return np.clip(env.base_mcs() + delta, 0, 14), np.zeros_like(pidx)", "R12 deployed policy ignores power action"),
+    ("aran/policies.py", "            p = np.where(top, len(env.cfg.power_levels_db) - 1, 0)", "            p = np.where(top & (mcs >= phy.N_MCS - 1), len(env.cfg.power_levels_db) - 1, 0)", "R13 revert to strict back-off rule"),
+    ("aran/env.py", "        self.meas.append(self._measure(t + D, pdb))", "        self.meas.append(self._measure(t + D, np.zeros(C)))", "R14 CQI ignores neighbours' actual power"),
+    ("scripts/aggregate.py", "        D = Ma - Mb  # broadcasting a rule's (1, E) row over seeds", "        D = Ma - Mb[:, ::-1]  # broadcasting a rule's (1, E) row over seeds", "R15 rule row mis-paired with learner episodes"),
+    ("aran/agents.py", "    if method == \"iql_team\":\n        return np.full_like(cell_r, cell_r.mean())", "    if method == \"iql_team\":\n        return np.full_like(cell_r, cell_r.sum())", "R16 IQL-team uses summed reward"),
+    # --- round-1 fixes: provenance, tuning record, config caps, script exits ---
+    ("scripts/tune_rules.py", "    seeds = list(A.DEV_SEEDS) if seeds is None else list(seeds)", "    seeds = list(A.EVAL_SEEDS) if seeds is None else list(seeds)", "tune_rules defaults to evaluation episodes"),
+    ("scripts/tune_rules.py", "        used.add(int(s))", "        pass", "tuning JSON does not record the seeds used"),
+    ("aran/provenance.py", "    return all(old.get(k) == meta[k] for k in (\"code_hash\", \"config\", \"tuning\"))", "    return True", "stale results silently skipped"),
+    ("aran/provenance.py", "        h.update(f.encode() + b\"\\0\" + open(os.path.join(root, f), \"rb\").read() + b\"\\0\")", "        h.update(f.encode())", "code hash ignores file contents"),
+    ("scripts/aggregate.py", "            probs.append(f\"{kind}: {len(h)} different code hashes (mixed provenance)\")", "            pass", "aggregate accepts mixed code hashes"),
+    ("scripts/aggregate.py", "        if m.get(\"git_dirty\", True):", "        if False:", "aggregate accepts a dirty tree"),
+    ("scripts/aggregate.py", "        assert np.array_equal(np.asarray(ep_a), np.asarray(ep_b)), \"A and B are not paired on the same episodes\"", "        pass", "compare() does not check episode pairing"),
+    ("aran/env.py", "            if not (isinstance(v, int) and lo <= v <= hi):", "            if False:", "config size caps removed"),
+    ("scripts/make_figures.py", "        sys.exit(2)", "        sys.exit(0)", "make_figures accepts a partial summary"),
 ]
+
+
+def _copy(td):
+    for d in ("aran", "scripts", "tests", "config"):
+        shutil.copytree(os.path.join(ROOT, d), os.path.join(td, d), ignore=shutil.ignore_patterns("__pycache__"))
+    shutil.copy(os.path.join(ROOT, "pyproject.toml"), td)
+    os.symlink(os.path.join(ROOT, "results"), os.path.join(td, "results"))  # read-only use by tests
+
+
+def _pytest(td):
+    return subprocess.run([sys.executable, "-m", "pytest", "-x", "-p", "no:cacheprovider", "tests"], cwd=td,
+                          capture_output=True, text=True, timeout=900)
+
+
+def _summary(r):
+    lines = [l for l in r.stdout.splitlines() if " passed" in l or " failed" in l]
+    return lines[-1].strip() if lines else ""
 
 
 def run_one(i, f, a, b):
     with tempfile.TemporaryDirectory() as td:
-        for d in ("aran", "scripts", "tests", "config"):
-            shutil.copytree(os.path.join(ROOT, d), os.path.join(td, d), ignore=shutil.ignore_patterns("__pycache__"))
-        shutil.copy(os.path.join(ROOT, "pyproject.toml"), td)
+        _copy(td)
         p = os.path.join(td, f)
         s = open(p).read()
         if s.count(a) != 1:
             return i, "BAD-PATTERN", s.count(a)
         open(p, "w").write(s.replace(a, b))
-        r = subprocess.run([sys.executable, "-m", "pytest", "-x", "-q", "-p", "no:cacheprovider", "tests"], cwd=td,
-                           capture_output=True, text=True, timeout=900)
-        return i, "killed" if r.returncode != 0 else "SURVIVED", r.returncode
+        r = _pytest(td)
+        return i, {0: "SURVIVED", 1: "killed"}.get(r.returncode, "ERROR"), r.returncode
 
 
 def main():
+    with tempfile.TemporaryDirectory() as td:
+        _copy(td)
+        ctl = _pytest(td)
+    print(f"control (unmutated copy): exit {ctl.returncode} :: {_summary(ctl)}", flush=True)
+    if ctl.returncode != 0:
+        print("control run failed - mutation results would be meaningless")
+        return 1
     res = [None] * len(M)
     with ThreadPoolExecutor(int(os.environ.get("MUT_WORKERS", "6"))) as ex:
         for i, st, rc in ex.map(lambda x: run_one(x[0], *x[1][:3]), enumerate(M)):
-            res[i] = dict(file=M[i][0], what=M[i][3], status=st)
+            res[i] = dict(file=M[i][0], what=M[i][3], status=st, exit=rc)
             print(f"{st:12s} {M[i][0]:22s} {M[i][3]}", flush=True)
     killed = sum(r["status"] == "killed" for r in res)
-    json.dump(dict(killed=killed, total=len(M), mutants=res), open(os.path.join(ROOT, "results/mutation_check.json"), "w"), indent=1)
+    json.dump(dict(control=dict(exit=ctl.returncode, summary=_summary(ctl)), killed=killed,
+                   total=len(M), mutants=res), open(os.path.join(ROOT, "results/mutation_check.json"), "w"), indent=1)
     print(f"{killed}/{len(M)} mutants killed")
     return 0 if killed == len(M) else 1
 
