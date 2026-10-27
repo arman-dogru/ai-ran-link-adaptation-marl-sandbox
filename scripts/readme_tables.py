@@ -18,11 +18,13 @@ def fmt(x, ci, nd=3):
 
 def tables(summ):
     out = []
-    for sc, v in summ["scenarios"].items():
+    for sc in S.SCENARIOS:
+        v = summ["scenarios"][sc]
         out.append(f"#### Scenario `{sc}`\n")
         out.append("| Method | SE (bit/s/Hz/cell) | Edge UE thr. | Jain | BLER | Power back-off (dB) | I/N (dB) |")
         out.append("|---|---|---|---|---|---|---|")
-        for m, k in v["methods"].items():
+        for m in tuple(S.RULES) + tuple(S.LEARNERS):
+            k = v["methods"][m]
             out.append(f"| {LABEL[m]} | {fmt(k['se']['mean'], k['se']['ci'])} | {fmt(k['edge']['mean'], k['edge']['ci'])} | "
                        f"{fmt(k['jain']['mean'], k['jain']['ci'])} | {fmt(k['bler']['mean'], k['bler']['ci'])} | "
                        f"{fmt(k['power_db']['mean'], k['power_db']['ci'], 2)} | {fmt(k['inr_db']['mean'], k['inr_db']['ci'], 1)} |")
