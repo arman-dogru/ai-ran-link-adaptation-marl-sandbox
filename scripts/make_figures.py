@@ -247,8 +247,9 @@ def action_heatmaps(res, out, sc="default"):
                        extent=[cq[0] - 0.5, cq[-1] + 0.5, -0.5, 2.5])
         ax.set_yticks([0, 1, 2], ["-6", "-3", "0"])
         ax.set_ylabel("power (dB)" if j == 0 else "")
-        ax.set_xlabel("reported CQI index (0-14 = LTE CQI 1-15)")
-    fig.colorbar(im, ax=axes, shrink=0.6, label="P(action | reported CQI)")
+        ax.set_xlabel("CQI index")
+    fig.supxlabel("reported CQI index (0-14 = LTE CQI 1-15; -1 = out of range)", fontsize=9)
+    fig.colorbar(im, ax=axes, shrink=0.6, label="P(action | reported CQI index)")
     fig.suptitle(f"What the policies do ({sc} scenario, 30 eval episodes; learners pooled over 15 seeds): top = MCS offset, bottom = power; CQI -1 = out of range")
     save(fig, out, f"actions_{sc}.png")
 

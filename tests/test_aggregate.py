@@ -59,7 +59,8 @@ def _good_metas(root):
             sub = rel.split("/")[0]
             sc = sub if sub in S.SCENARIOS else "default"
             cfg = PV.cfg_dict(S.scenario_config(sc, os.path.join(G.ROOT, "config/default.json")))
-            json.dump(dict(code_hash=f"h-{sub if sub in ('sweep', 'horizon') else 'main'}", git_dirty=False, config=cfg, tuning=tun),
+            extra = {"sweep": ("scripts/run_sweep.py",), "horizon": ("scripts/run_horizon.py",)}.get(sub, ())
+            json.dump(dict(code_hash=PV.code_hash(files=PV.CODE_FILES + extra), git_dirty=False, config=cfg, tuning=tun),
                       open(raw / rel, "w"))
     return raw
 
@@ -68,13 +69,15 @@ def test_provenance_clean_grid_passes(tmp_path):
     assert G.check_provenance(str(_good_metas(tmp_path))) == []
 
 
+@pytest.mark.parametrize("where", ["coupled/vdn_s4/meta.json", "sweep/iql.meta.json", "horizon/rule_olla-10.meta.json"])
 @pytest.mark.parametrize("field,value,needle", [("code_hash", "other", "mixed provenance"), ("git_dirty", True, "dirty"),
+                                                ("git_dirty", None, "unknown git state"),
                                                 ("tuning", {"fixed_mcs": 6}, "tuned rule parameters"),
                                                 ("config", {"n_cells": 2}, "config differs")])
-def test_provenance_problems_refused(tmp_path, capsys, field, value, needle):
+def test_provenance_problems_refused(tmp_path, capsys, field, value, needle, where):
     import json
     raw = _good_metas(tmp_path)
-    p = raw / "coupled" / "vdn_s4" / "meta.json"
+    p = raw / where
     m = json.load(open(p))
     m[field] = value
     json.dump(m, open(p, "w"))
@@ -133,3 +136,17 @@ def test_load_matrix_orders_episodes(tmp_path):
         pd.DataFrame(dict(episode_seed=[3, 1, 2], se=[30.0 + s, 10.0 + s, 20.0 + s])).to_csv(d / "eval.csv", index=False)
     M, ep = G.load_matrix(str(raw), "default", "iql", "se", [0, 1])
     assert list(ep) == [1, 2, 3] and M.tolist() == [[10, 20, 30], [11, 21, 31]]
+
+
+def test_provenance_refuses_a_uniform_but_stale_code_hash(tmp_path):
+    """All metas agree with each other but not with the current tree (results from older code)."""
+    import json
+    raw = _good_metas(tmp_path)
+    for dp, _, fs in os.walk(raw):
+        for f in fs:
+            if f.endswith("meta.json"):
+                m = json.load(open(os.path.join(dp, f)))
+                json.dump(dict(m, code_hash="old-but-uniform"), open(os.path.join(dp, f), "w"))
+    probs = G.check_provenance(str(raw))
+    assert any("differs from the current tree" in x for x in probs)
+    assert not any("mixed provenance" in x for x in probs)

@@ -39,8 +39,8 @@ def _same_model(p, q):
 def main():
     files = PV.CODE_FILES + ("scripts/run_sweep.py", "scripts/run_horizon.py")
     sha, dirty = PV.git_state(files=files)
-    if dirty:
-        sys.exit("refusing: code files are dirty; commit first")
+    if dirty is not False:
+        sys.exit("refusing: code files are dirty or the git state is unknown; commit first")
     tmp = tempfile.mkdtemp(prefix="aran_backfill_")
     for sc in S.SCENARIOS:
         shutil.copy(os.path.join(ROOT, f"results/dev_tuning_{sc}.json"), tmp)
@@ -89,6 +89,7 @@ def main():
             meta = PV.run_meta(cfg, tun, scenario=sc, kind=kind, method=name, seed=int(seed) if kind != "rule" else None,
                                eval_seeds=[min(A.EVAL_SEEDS), max(A.EVAL_SEEDS)],
                                train_episodes=S.EPISODES if kind != "rule" else 0, **note)
+            meta["regenerated"] = os.path.relpath(os.path.join(d, "eval.csv"), RAW) in verified
             PV.write_meta(os.path.join(d, "meta.json"), meta)
             n += 1
     base = S.scenario_config("default", os.path.join(ROOT, "config/default.json"))
@@ -97,6 +98,7 @@ def main():
                                 ("horizon", "scripts/run_horizon.py", [f"rule_{r}" for r in H.H_RULES] + list(S.LEARNERS))):
         for name in names:
             meta = PV.run_meta(base, tun, extra_files=(script,), kind=kind, policy=name, **note)
+            meta["regenerated"] = os.path.join(kind, f"{name}.csv") in verified
             PV.write_meta(os.path.join(RAW, kind, f"{name}.meta.json"), meta)
             n += 1
     # the run scripts themselves must now consider every committed output up to date
@@ -105,7 +107,14 @@ def main():
     status += [SW.job((nm, RAW, False))[1] for nm in [f"rule_{r}" for r in SW.SWEEP_RULES] + list(S.LEARNERS)]
     status += [H.job((nm, RAW, False))[1] for nm in [f"rule_{r}" for r in H.H_RULES] + list(S.LEARNERS)]
     assert all(s == "skip (up to date)" for s in status), status
-    json.dump(dict(ok=True, code_commit=sha, metas_written=n, all_skip_up_to_date=len(status),
+    json.dump(dict(ok=True, code_commit=sha, metas_written=n,
+                   metas_regenerated=sum(1 for dp, _, fs in os.walk(RAW) for f in fs if f.endswith("meta.json")
+                                         and json.load(open(os.path.join(dp, f))).get("regenerated")),
+                   run_scripts_report_up_to_date=len(status),
+                   note="run_scripts_report_up_to_date is a consistency check that the metas just written match what "
+                        "run_grid/run_sweep/run_horizon compute; it is not independent evidence. The evidence is "
+                        "`identical`: outputs regenerated from scratch with this code and compared byte for byte. "
+                        "Each meta.json says whether its own output was regenerated (`regenerated`).",
                    identical=sorted(verified), not_regenerated="learner seeds 1-14 of the main grid and the sweep/horizon "
                    "files of SA, IQL-team and VDN: same code and config as the verified files, not re-run (cost)"),
               open(os.path.join(ROOT, "results/provenance_check.json"), "w"), indent=1)

@@ -50,6 +50,8 @@ def check_provenance(raw):
     tun = {sc: PV.tuning_params(json.load(open(os.path.join(os.path.dirname(os.path.realpath(raw)), f"dev_tuning_{sc}.json"))))
            for sc in S.SCENARIOS}
     cfgs = {sc: PV.cfg_dict(S.scenario_config(sc, os.path.join(ROOT, "config/default.json"))) for sc in S.SCENARIOS}
+    current = {"main": PV.code_hash(), "sweep": PV.code_hash(files=PV.CODE_FILES + ("scripts/run_sweep.py",)),
+               "horizon": PV.code_hash(files=PV.CODE_FILES + ("scripts/run_horizon.py",))}
     for rel in S.expected_main_files() + expected_sweep_files() + expected_horizon_files():
         if not rel.endswith("meta.json"):
             continue
@@ -58,11 +60,13 @@ def check_provenance(raw):
         kind = sub if sub in ("sweep", "horizon") else "main"
         hashes.setdefault(kind, set()).add(m.get("code_hash"))
         sc = "default" if kind != "main" else sub
-        if m.get("git_dirty", True):
-            probs.append(f"{rel}: produced from a dirty tree")
+        if m.get("git_dirty") is not False:
+            probs.append(f"{rel}: produced from a dirty tree or an unknown git state")
+        if m.get("code_hash") != current[kind]:
+            probs.append(f"{rel}: code hash differs from the current tree (stale result)")
         if m.get("tuning") != tun[sc]:
             probs.append(f"{rel}: tuned rule parameters differ from results/dev_tuning_{sc}.json")
-        if kind == "main" and m.get("config") != cfgs[sc]:
+        if m.get("config") != cfgs[sc]:
             probs.append(f"{rel}: config differs from scenario {sc}")
     for kind, h in hashes.items():
         if len(h) != 1:

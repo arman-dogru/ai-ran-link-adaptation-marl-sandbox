@@ -21,13 +21,20 @@ def code_hash(root=ROOT, files=CODE_FILES):
 
 
 def git_state(root=ROOT, files=CODE_FILES):
+    """(sha, dirty). dirty is True / False inside a git checkout whose top level is `root`, and None ("unknown")
+    otherwise - a tarball, a copy, a nested directory of another repo, or no git binary - never "clean" by default."""
+    def git(*args):
+        return subprocess.run(["git", *args], cwd=root, capture_output=True, text=True)
     try:
-        sha = subprocess.run(["git", "rev-parse", "HEAD"], cwd=root, capture_output=True, text=True).stdout.strip()
-        dirty = bool(subprocess.run(["git", "status", "--porcelain", "--", *files], cwd=root, capture_output=True,
-                                    text=True).stdout.strip())
+        top = git("rev-parse", "--show-toplevel")
+        if top.returncode or os.path.realpath(top.stdout.strip()) != os.path.realpath(root):
+            return "", None
+        head, st = git("rev-parse", "HEAD"), git("status", "--porcelain", "--", *files)
     except OSError:
-        sha, dirty = "", True
-    return sha, dirty
+        return "", None
+    if head.returncode or st.returncode:
+        return "", None
+    return head.stdout.strip(), bool(st.stdout.strip())
 
 
 def cfg_dict(cfg):
@@ -40,7 +47,7 @@ def tuning_params(tun):
 
 
 def run_meta(cfg, tun, extra_files=(), **extra):
-    sha, dirty = git_state(files=CODE_FILES + tuple(extra_files))
+    sha, dirty = git_state(files=CODE_FILES + tuple(extra_files))  # dirty: True / False / None (unknown)
     return dict(code_hash=code_hash(files=CODE_FILES + tuple(extra_files)), git_sha=sha, git_dirty=dirty,
                 config=cfg_dict(cfg), tuning=tuning_params(tun), **extra)
 

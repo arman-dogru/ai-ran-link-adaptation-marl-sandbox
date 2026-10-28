@@ -51,6 +51,21 @@ def test_tune_rules_scores_only_dev_episodes_and_records_them(monkeypatch):
     assert best["olla_se"] == max(r["se"] for r in rows if r["kind"] == "olla")
 
 
+def test_tune_rules_picks_the_best_setting(monkeypatch):
+    """The selection itself: SE peaks at fixed MCS 9 and OLLA (0.2, 0.25, -3); tuning must pick those, not the worst."""
+    def fake(env, pol, s, trace=False):
+        if isinstance(pol, P.FixedMCS):
+            se = 2 - abs(pol.mcs - 9) / 10
+        else:
+            se = 2 - abs(pol.target - 0.2) - abs(pol.step_down - 0.25) - abs(pol.init + 3) / 10
+        return dict(_fake_kpis(s), se=se)
+    monkeypatch.setattr(P, "run_episode", fake)
+    rows, best = TR.tune(SMALL, "default", seeds=[5000, 5001], workers=1, targets=(0.05, 0.2, 0.3),
+                         steps=(0.1, 0.25, 1.0), inits=(-6.0, -3.0, 0.0))
+    assert (best["fixed_mcs"], best["olla_target"], best["olla_step"], best["olla_init"]) == (9, 0.2, 0.25, -3.0)
+    assert best["olla_se"] == pytest.approx(2.0) and best["fixed_se"] == pytest.approx(2.0)
+
+
 def _tuning_file(d, sc="default"):
     json.dump(dict(scenario=sc, fixed_mcs=7, olla_target=0.2, olla_step=0.1, olla_init=-2.0, dev_seeds=[5000]),
               open(os.path.join(d, f"dev_tuning_{sc}.json"), "w"))
@@ -78,6 +93,38 @@ def test_grid_job_evaluates_on_eval_episodes_and_tracks_provenance(tmp_path, mon
     os.remove(os.path.join(d, "meta.json"))
     with pytest.raises(RG.StaleResult):
         RG.job(("default", "rule", "cqi-only", 0, raw, False))
+    # --force re-runs and rewrites current provenance
+    seen.clear()
+    assert RG.job(("default", "rule", "cqi-only", 0, raw, True))[1] != "skip (up to date)"
+    assert seen == list(A.EVAL_SEEDS)
+    assert PV.up_to_date(os.path.join(d, "meta.json"), json.load(open(os.path.join(d, "meta.json"))))
+    assert json.load(open(os.path.join(d, "meta.json")))["code_hash"] == PV.code_hash()
+
+
+@pytest.mark.parametrize("modname", ["run_sweep", "run_horizon"])
+def test_sweep_and_horizon_refuse_stale_output_and_honour_force(tmp_path, monkeypatch, modname):
+    import importlib
+    from aran import provenance as PV
+    M = importlib.import_module(modname)
+    seen = []
+    monkeypatch.setattr(P, "run_episode", lambda env, pol, s, trace=False: (seen.append(int(s)), _fake_kpis(s))[1])
+    _tuning_file(tmp_path)
+    raw = str(tmp_path / "raw")
+    sub = "sweep" if modname == "run_sweep" else "horizon"
+    path = M.job(("rule_cqi-only", raw, False))[0]
+    assert seen and os.path.exists(path) and os.path.exists(path[:-4] + ".meta.json")
+    assert M.job(("rule_cqi-only", raw, False))[1] == "skip (up to date)"
+    mpath = path[:-4] + ".meta.json"
+    json.dump(dict(json.load(open(mpath)), code_hash="old"), open(mpath, "w"))
+    with pytest.raises(RG.StaleResult):
+        M.job(("rule_cqi-only", raw, False))
+    os.remove(mpath)
+    with pytest.raises(RG.StaleResult):
+        M.job(("rule_cqi-only", raw, False))
+    seen.clear()
+    assert M.job(("rule_cqi-only", raw, True))[1] != "skip (up to date)" and seen
+    assert json.load(open(mpath))["code_hash"] == PV.code_hash(files=PV.CODE_FILES + (f"scripts/{modname}.py",))
+    assert os.path.dirname(path).endswith(sub)
 
 
 def test_committed_results_use_the_right_episodes():

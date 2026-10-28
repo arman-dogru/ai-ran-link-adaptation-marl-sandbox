@@ -1,4 +1,12 @@
 {
+ "comparisons": {
+  "total": 34,
+  "significant": 32,
+  "not_significant": [
+   "coupled: vdn - iql_team (se)",
+   "default: vdn - iql_team (se)"
+  ]
+ },
  "sweep": {
   "cqi-only": {
    "cells": 25,
@@ -722,13 +730,17 @@
    "se_learned": 1.732,
    "se_full_power": 1.733,
    "change": 0.0006,
-   "seeds_improved": 7
+   "seeds_improved": 7,
+   "per_seed_change_min": -0.007,
+   "per_seed_change_max": 0.0097
   },
   "coupled/iql_team": {
    "se_learned": 1.564,
    "se_full_power": 1.623,
    "change": 0.059,
    "seeds_improved": 15,
+   "per_seed_change_min": 0.001,
+   "per_seed_change_max": 0.1024,
    "gap_to_iql": 0.168,
    "fraction_of_gap_explained_by_power": 0.35
   },
@@ -737,6 +749,8 @@
    "se_full_power": 1.628,
    "change": 0.0515,
    "seeds_improved": 15,
+   "per_seed_change_min": 0.0135,
+   "per_seed_change_max": 0.0926,
    "gap_to_iql": 0.156,
    "fraction_of_gap_explained_by_power": 0.33
   },
@@ -744,13 +758,17 @@
    "se_learned": 1.887,
    "se_full_power": 1.89,
    "change": 0.0026,
-   "seeds_improved": 10
+   "seeds_improved": 10,
+   "per_seed_change_min": -0.0186,
+   "per_seed_change_max": 0.0154
   },
   "default/iql_team": {
    "se_learned": 1.726,
    "se_full_power": 1.817,
    "change": 0.0906,
    "seeds_improved": 15,
+   "per_seed_change_min": 0.0535,
+   "per_seed_change_max": 0.1234,
    "gap_to_iql": 0.161,
    "fraction_of_gap_explained_by_power": 0.56
   },
@@ -759,6 +777,8 @@
    "se_full_power": 1.815,
    "change": 0.0985,
    "seeds_improved": 15,
+   "per_seed_change_min": 0.0676,
+   "per_seed_change_max": 0.1356,
    "gap_to_iql": 0.17,
    "fraction_of_gap_explained_by_power": 0.58
   }

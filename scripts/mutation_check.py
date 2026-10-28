@@ -87,10 +87,26 @@ M = [  # (file, original, mutant, what it breaks)
     ("aran/provenance.py", "    return all(old.get(k) == meta[k] for k in (\"code_hash\", \"config\", \"tuning\"))", "    return True", "stale results silently skipped"),
     ("aran/provenance.py", "        h.update(f.encode() + b\"\\0\" + open(os.path.join(root, f), \"rb\").read() + b\"\\0\")", "        h.update(f.encode())", "code hash ignores file contents"),
     ("scripts/aggregate.py", "            probs.append(f\"{kind}: {len(h)} different code hashes (mixed provenance)\")", "            pass", "aggregate accepts mixed code hashes"),
-    ("scripts/aggregate.py", "        if m.get(\"git_dirty\", True):", "        if False:", "aggregate accepts a dirty tree"),
+    ("scripts/aggregate.py", "        if m.get(\"git_dirty\") is not False:", "        if False:", "aggregate accepts a dirty tree"),
     ("scripts/aggregate.py", "        assert np.array_equal(np.asarray(ep_a), np.asarray(ep_b)), \"A and B are not paired on the same episodes\"", "        pass", "compare() does not check episode pairing"),
     ("aran/env.py", "            if not (isinstance(v, int) and lo <= v <= hi):", "            if False:", "config size caps removed"),
     ("scripts/make_figures.py", "        sys.exit(2)", "        sys.exit(0)", "make_figures accepts a partial summary"),
+    ('aran/provenance.py', '"aran/phy.py", "aran/env.py", "aran/policies.py"', '"aran/phy.py", "aran/policies.py"', 'r2: CODE_FILES drops aran/env.py'),
+    ('aran/provenance.py', '    return head.stdout.strip(), bool(st.stdout.strip())', '    return head.stdout.strip(), False', 'r2: git_state never reports dirty'),
+    ('aran/provenance.py', '            return "", None\n        head', '            return "", False\n        head', 'r2: outside a git checkout reported as clean'),
+    ('scripts/run_grid.py', '    if not force and os.path.exists(os.path.join(d, "eval.csv")):', '    if os.path.exists(os.path.join(d, "eval.csv")):', 'r2: run_grid --force ignored'),
+    ('scripts/run_sweep.py', '        raise StaleResult(f"{path}: output exists but its meta.json is missing or stale; re-run with --force")', '        return path, "skip (up to date)"', 'r2: run_sweep skips stale output'),
+    ('scripts/run_horizon.py', '        raise StaleResult(f"{path}: output exists but its meta.json is missing or stale; re-run with --force")', '        return path, "skip (up to date)"', 'r2: run_horizon skips stale output'),
+    ('scripts/run_sweep.py', '    if not force and os.path.exists(path):', '    if os.path.exists(path):', 'r2: run_sweep --force ignored'),
+    ('scripts/run_horizon.py', '    if not force and os.path.exists(path):', '    if os.path.exists(path):', 'r2: run_horizon --force ignored'),
+    ('scripts/tune_rules.py', '    olla = max((r for r in rows if r["kind"] == "olla"), key=lambda r: r["se"])', '    olla = min((r for r in rows if r["kind"] == "olla"), key=lambda r: r["se"])', 'r2: OLLA tuning picks the worst setting'),
+    ('scripts/tune_rules.py', '    fixed = max((r for r in rows if r["kind"] == "fixed"), key=lambda r: r["se"])', '    fixed = min((r for r in rows if r["kind"] == "fixed"), key=lambda r: r["se"])', 'r2: fixed-MCS tuning picks the worst MCS'),
+    ('scripts/aggregate.py', '        if m.get("code_hash") != current[kind]:', '        if False:', 'r2: aggregate ignores a uniform but stale code hash'),
+    ('scripts/aggregate.py', '        if m.get("git_dirty") is not False:', '        if m.get("git_dirty"):', 'r2: aggregate accepts an unknown git state'),
+    ('scripts/aggregate.py', '        if m.get("config") != cfgs[sc]:', '        if kind == "main" and m.get("config") != cfgs[sc]:', 'r2: sweep/horizon config not checked'),
+    ('scripts/claim_numbers.py', 'significant=sum(bool(c["significant"]) for c in comps)', 'significant=sum(c["p_holm"] < 0.05 or c["diff"] > 0 for c in comps)', 'r2: claim numbers miscount significant comparisons'),
+    ('scripts/claim_numbers.py', 'per_seed_change_min=r(gain.min(), 4)', 'per_seed_change_min=r(gain.mean(), 4)', 'r2: claim numbers report the mean as the per-seed minimum'),
+    ('scripts/claim_numbers.py', 'sig_positive=int(((g.lo > 0)).sum())', 'sig_positive=int(((g.diff_vs_olla > 0)).sum())', "r2: sweep 'significant' counts any positive cell"),
 ]
 
 
@@ -98,7 +114,7 @@ def _copy(td):
     for d in ("aran", "scripts", "tests", "config"):
         shutil.copytree(os.path.join(ROOT, d), os.path.join(td, d), ignore=shutil.ignore_patterns("__pycache__"))
     shutil.copy(os.path.join(ROOT, "pyproject.toml"), td)
-    os.symlink(os.path.join(ROOT, "results"), os.path.join(td, "results"))  # read-only use by tests
+    os.symlink(os.path.join(ROOT, "results"), os.path.join(td, "results"))  # tests only read it; main() checks it is unchanged
 
 
 def _pytest(td):
@@ -123,7 +139,15 @@ def run_one(i, f, a, b):
         return i, {0: "SURVIVED", 1: "killed"}.get(r.returncode, "ERROR"), r.returncode
 
 
+def _results_state():
+    """git's view of results/ (status + tracked-file hashes), to prove no run wrote through the symlink."""
+    st = subprocess.run(["git", "status", "--porcelain", "--untracked-files=all", "--", "results"], cwd=ROOT,
+                        capture_output=True, text=True).stdout
+    return st, subprocess.run(["git", "ls-files", "-s", "--", "results"], cwd=ROOT, capture_output=True, text=True).stdout
+
+
 def main():
+    before = _results_state()
     with tempfile.TemporaryDirectory() as td:
         _copy(td)
         ctl = _pytest(td)
@@ -137,6 +161,9 @@ def main():
             res[i] = dict(file=M[i][0], what=M[i][3], status=st, exit=rc)
             print(f"{st:12s} {M[i][0]:22s} {M[i][3]}", flush=True)
     killed = sum(r["status"] == "killed" for r in res)
+    if _results_state() != before:
+        print("results/ changed during the mutation run - a test or mutant wrote through the symlink")
+        return 1
     json.dump(dict(control=dict(exit=ctl.returncode, summary=_summary(ctl)), killed=killed,
                    total=len(M), mutants=res), open(os.path.join(ROOT, "results/mutation_check.json"), "w"), indent=1)
     print(f"{killed}/{len(M)} mutants killed")
