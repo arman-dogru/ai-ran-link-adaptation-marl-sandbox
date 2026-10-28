@@ -1,10 +1,10 @@
 {
  "control": {
   "exit": 0,
-  "summary": "107 passed in 20.45s"
+  "summary": "133 passed in 26.86s"
  },
- "killed": 82,
- "total": 82,
+ "killed": 98,
+ "total": 98,
  "mutants": [
   {
    "file": "aran/phy.py",
@@ -495,6 +495,102 @@
   {
    "file": "scripts/make_figures.py",
    "what": "make_figures accepts a partial summary",
+   "status": "killed",
+   "exit": 1
+  },
+  {
+   "file": "aran/provenance.py",
+   "what": "r2: CODE_FILES drops aran/env.py",
+   "status": "killed",
+   "exit": 1
+  },
+  {
+   "file": "aran/provenance.py",
+   "what": "r2: git_state never reports dirty",
+   "status": "killed",
+   "exit": 1
+  },
+  {
+   "file": "aran/provenance.py",
+   "what": "r2: outside a git checkout reported as clean",
+   "status": "killed",
+   "exit": 1
+  },
+  {
+   "file": "scripts/run_grid.py",
+   "what": "r2: run_grid --force ignored",
+   "status": "killed",
+   "exit": 1
+  },
+  {
+   "file": "scripts/run_sweep.py",
+   "what": "r2: run_sweep skips stale output",
+   "status": "killed",
+   "exit": 1
+  },
+  {
+   "file": "scripts/run_horizon.py",
+   "what": "r2: run_horizon skips stale output",
+   "status": "killed",
+   "exit": 1
+  },
+  {
+   "file": "scripts/run_sweep.py",
+   "what": "r2: run_sweep --force ignored",
+   "status": "killed",
+   "exit": 1
+  },
+  {
+   "file": "scripts/run_horizon.py",
+   "what": "r2: run_horizon --force ignored",
+   "status": "killed",
+   "exit": 1
+  },
+  {
+   "file": "scripts/tune_rules.py",
+   "what": "r2: OLLA tuning picks the worst setting",
+   "status": "killed",
+   "exit": 1
+  },
+  {
+   "file": "scripts/tune_rules.py",
+   "what": "r2: fixed-MCS tuning picks the worst MCS",
+   "status": "killed",
+   "exit": 1
+  },
+  {
+   "file": "scripts/aggregate.py",
+   "what": "r2: aggregate ignores a uniform but stale code hash",
+   "status": "killed",
+   "exit": 1
+  },
+  {
+   "file": "scripts/aggregate.py",
+   "what": "r2: aggregate accepts an unknown git state",
+   "status": "killed",
+   "exit": 1
+  },
+  {
+   "file": "scripts/aggregate.py",
+   "what": "r2: sweep/horizon config not checked",
+   "status": "killed",
+   "exit": 1
+  },
+  {
+   "file": "scripts/claim_numbers.py",
+   "what": "r2: claim numbers miscount significant comparisons",
+   "status": "killed",
+   "exit": 1
+  },
+  {
+   "file": "scripts/claim_numbers.py",
+   "what": "r2: claim numbers report the mean as the per-seed minimum",
+   "status": "killed",
+   "exit": 1
+  },
+  {
+   "file": "scripts/claim_numbers.py",
+   "what": "r2: sweep 'significant' counts any positive cell",
    "status": "killed",
    "exit": 1
   }

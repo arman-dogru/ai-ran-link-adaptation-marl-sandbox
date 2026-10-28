@@ -42,7 +42,7 @@ def run_one(edit):
             if s.count(a) != 1:
                 return "BAD-PATTERN", None, ""
             open(p, "w").write(s.replace(a, b))
-        r = subprocess.run([sys.executable, "-m", "pytest", "-x", "-q", "-p", "no:cacheprovider", "tests"], cwd=td,
+        r = subprocess.run([sys.executable, "-m", "pytest", "-x", "-p", "no:cacheprovider", "tests"], cwd=td,
                            capture_output=True, text=True, timeout=900)
         fail = [l for l in r.stdout.splitlines() if l.startswith(("FAILED", "ERROR"))]
         last = [l.strip() for l in r.stdout.splitlines() if " passed" in l or " failed" in l]

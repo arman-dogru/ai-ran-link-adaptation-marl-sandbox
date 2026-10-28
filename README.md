@@ -163,8 +163,8 @@ loss, γ = 0.5 and 1000 episodes with ε decaying 1 → 0.05 over the first 600.
 The full tables, with every KPI and all 34 comparisons, are in [docs/results_tables.md](docs/results_tables.md),
 generated from [results/summary.json](results/summary.json).
 
-![Forest plot in a 2-by-2 grid: rows are SE (10 comparisons) and edge throughput (7 comparisons), columns the two scenarios, each panel with its own x-axis and a relative-difference label per point. 33 of the 34 comparisons are significant (green = gain, red = loss); the only grey one is VDN minus team-reward IQL on SE in both scenarios. SA and IQL minus tuned OLLA are green on SE and edge, the team-reward learners minus OLLA and minus IQL are red, and the back-off rule is red on SE and green on edge.](figures/diff_forest.png)
-*Data: [results/comparisons.csv](results/comparisons.csv). Script: [make_figures.py](scripts/make_figures.py) `forest`. Unit of inference: the training seed for learners (exact sign-flip test, n = 15) and the episode for rule vs rule (n = 100).*
+![Forest plot in a 2-by-2 grid: rows are SE (10 comparisons) and edge throughput (7 comparisons), columns the two scenarios, each panel with its own x-axis and a relative-difference label per point. 32 of the 34 comparisons are significant (green = gain, red = loss); the two grey ones are VDN minus team-reward IQL on SE, one per scenario. SA and IQL minus tuned OLLA are green on SE and edge, the team-reward learners minus OLLA and minus IQL are red, and the back-off rule is red on SE and green on edge.](figures/diff_forest.png)
+*Data: [results/comparisons.csv](results/comparisons.csv). Script: [make_figures.py](scripts/make_figures.py) `forest`. Unit of inference: the training seed for learners (exact sign-flip test, n = 15) and the episode for rule vs rule (n = 100). The significant count (32/34) is in [results/claim_numbers.json](results/claim_numbers.json) (`comparisons`).*
 
 | Comparison (`default`) | ΔSE [95% CI] | ΔEdge [95% CI] | Seeds A>B | Holm p |
 |---|---|---|---|---|
@@ -184,7 +184,7 @@ Monte-Carlo floor (p = 1e-5) and take the first 6 Holm steps, so the seed-level 
 
 ### Timeline of one episode
 
-![Per-TTI timeline for cell 0 in evaluation episode 10000. The top two panels show the true SINR of the scheduled UE (grey) against the 10%-BLER threshold of the MCS chosen by tuned OLLA (blue) and by IQL (green), with NACKs as red crosses. IQL tracks the SINR more aggressively. The bottom panel shows VDN backing off cell-0 power in 49% of the 200 TTIs, while IQL stays at 0 dB except for 3 TTIs (around TTIs 3, 7 and 168).](figures/timeline.png)
+![Per-TTI timeline for cell 0 in evaluation episode 10000. The top two panels show the true SINR of the scheduled UE (grey) against the 10%-BLER threshold of the MCS chosen by tuned OLLA (blue) and by IQL (green), with NACKs as red crosses. IQL tracks the SINR more aggressively. The bottom panel shows VDN backing off cell-0 power in 49% of the 200 TTIs, while IQL stays at 0 dB except for 3 TTIs (at TTIs 3, 7 and 168).](figures/timeline.png)
 *Data: [results/trace_default.csv](results/trace_default.csv). Script: [scripts/trace_episode.py](scripts/trace_episode.py), [make_figures.py](scripts/make_figures.py) `timeline`. A single episode, shown for illustration only.*
 
 ### Interference and collision proxies
@@ -254,14 +254,16 @@ python scripts/mutation_check.py                  # ~5-10 min with MUT_WORKERS=6
 
 `run_grid.py`, `run_sweep.py` and `run_horizon.py` write a `meta.json` (code hash, git state, config, tuned rule
 parameters) next to every output and skip an output only when it is up to date; an output with missing or stale
-provenance is an error unless `--force`. The committed raw results predate this; their metas were backfilled only
-after regenerating a sample and finding it byte-identical ([record](results/provenance_check.json),
-[docs/method.md](docs/method.md#reproducibility-guards)). Every number in this README comes from the committed files
+provenance is an error unless `--force`. The git state is recorded as clean, dirty or unknown (outside a git
+checkout), and `aggregate.py` accepts only clean results whose code hash equals the current tree's. The committed
+raw results predate this; their metas were backfilled only after regenerating a sample (44 files) and finding it
+byte-identical. Each backfilled `meta.json` says whether its own output was regenerated (`"regenerated"`)
+([record](results/provenance_check.json), [docs/method.md](docs/method.md#reproducibility-guards)). Every number in this README comes from the committed files
 under `results/`. Regenerating the figures from them gives byte-identical PNGs.
 
 ## Tests and mutation check
 
-- **107 pytest tests** ([tests/](tests/)) cover:
+- **133 pytest tests** ([tests/](tests/)) cover:
   - PHY tables, the BLER curve, CQI-index mapping and the genie argmax
   - env reset/step invariants: shapes, observation space, episode termination, seed determinism, common random
     numbers, best-cell attachment, SINR against a hand computation, power coupling, CQI delay, the
@@ -279,20 +281,26 @@ under `results/`. Regenerating the figures from them gives byte-identical PNGs.
     synthetic grid (Holm over 34, the paired CI, the relative-% base, ties not counted as wins); `compare()` refuses
     unpaired episodes
   - the stats: exact and Monte-Carlo sign-flip tests, Holm, and the crossed bootstrap
-  - the aggregate guard (missing, unexpected or empty raw; mixed code hash; dirty tree; tuning or config mismatch;
-    no partial mode) and the provenance hash; `make_figures.py` exits 2 on an incomplete summary; `run_grid.py`
-    rejects an unknown scenario
+  - the aggregate guard (missing, unexpected or empty raw; mixed or stale code hash; dirty or unknown git state;
+    tuning or config mismatch, for the main grid, sweep and horizon; no partial mode); the provenance file list and
+    hash (every code file), clean / dirty / unknown git state; `--force` and stale-output refusal in `run_grid`,
+    `run_sweep` and `run_horizon`; the tuning selection (best, not worst, setting); `make_figures.py` exits 2 on an
+    incomplete summary; `run_grid.py` rejects an unknown scenario; `claim_numbers.py` regenerates the committed
+    `claim_numbers.json` exactly
   - a CPU demo smoke test
-- **Mutation check**: [scripts/mutation_check.py](scripts/mutation_check.py) first runs the unmutated copy (107
-  passed), then applies 82 single-line bugs to a throw-away copy, for example "ACK probability inverted", "CQI
+- **Mutation check**: [scripts/mutation_check.py](scripts/mutation_check.py) first runs the unmutated copy (133
+  passed), then applies 98 single-line bugs to a throw-away copy, for example "ACK probability inverted", "CQI
   report not delayed", "VDN mixes by mean", "seed 0 trains on eval episodes", "no Holm correction", "aggregate
   accepts mixed code hashes" and the reviewer's 16 (R1-R16: learners train on eval episodes, grid evaluates on dev
   seeds, OLLA tuned on eval episodes, future-CQI leaks, ties as wins, Holm per scenario, …). A mutant counts as
-  killed only if `pytest` exits 1. **82/82 killed** ([results/mutation_check.json](results/mutation_check.json)).
-  The reviewer's own harness, run unchanged against this tree, kills 14 of 16
-  ([results/mutation_reviewer_r1.json](results/mutation_reviewer_r1.json)); R2 and R3 no longer apply verbatim
-  because those call sites were refactored (`eval_seeds()`, `tune(seeds=…)`), and their adapted versions are in
-  the 82.
+  killed only if `pytest` exits 1, and the run fails if anything under `results/` changed.
+  **98/98 killed** ([results/mutation_check.json](results/mutation_check.json)).
+  The reviewer's R1-R16, with their mutant list verbatim but run with `results/` linked into each copy so the
+  control passes, a control run first and exit-1-only counting
+  ([docs/review/reviewer_r1_mutants.py](docs/review/reviewer_r1_mutants.py)), give 14 of 16 killed
+  ([results/mutation_reviewer_r1.json](results/mutation_reviewer_r1.json), with the control). R2 and R3 no longer
+  match because those call sites were refactored (`eval_seeds()`, `tune(seeds=…)`); their adapted versions are
+  in the 98.
 
 ## Limitations vs commercial AI-RAN
 
