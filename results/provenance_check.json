@@ -1,8 +1,10 @@
 {
  "ok": true,
- "code_commit": "7b23b1978e1de005f6440190298e0475af423e4f",
+ "code_commit": "7106ca94dc36a33b4f144ea3444f145b04d83793",
  "metas_written": 146,
- "all_skip_up_to_date": 146,
+ "metas_regenerated": 28,
+ "run_scripts_report_up_to_date": 146,
+ "note": "run_scripts_report_up_to_date is a consistency check that the metas just written match what run_grid/run_sweep/run_horizon compute; it is not independent evidence. The evidence is `identical`: outputs regenerated from scratch with this code and compared byte for byte. Each meta.json says whether its own output was regenerated (`regenerated`).",
  "identical": [
   "coupled/iql_s0/curve.csv",
   "coupled/iql_s0/eval.csv",

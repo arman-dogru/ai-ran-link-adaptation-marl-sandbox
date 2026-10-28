@@ -1,6 +1,6 @@
 {
  "backfilled": true,
- "backfilled_at": "7b23b1978e1de005f6440190298e0475af423e4f",
+ "backfilled_at": "7106ca94dc36a33b4f144ea3444f145b04d83793",
  "code_hash": "3363da0e980af236201c8ab219389f43a290e77c6644409d698acb9936ceb0b9",
  "config": {
   "bw_hz": 10000000.0,
@@ -42,9 +42,10 @@
   10099
  ],
  "git_dirty": false,
- "git_sha": "7b23b1978e1de005f6440190298e0475af423e4f",
+ "git_sha": "7106ca94dc36a33b4f144ea3444f145b04d83793",
  "kind": "learn",
  "method": "iql",
+ "regenerated": false,
  "scenario": "default",
  "seed": 5,
  "train_episodes": 1000,

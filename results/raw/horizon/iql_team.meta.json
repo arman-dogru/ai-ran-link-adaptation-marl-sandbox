@@ -1,6 +1,6 @@
 {
  "backfilled": true,
- "backfilled_at": "7b23b1978e1de005f6440190298e0475af423e4f",
+ "backfilled_at": "7106ca94dc36a33b4f144ea3444f145b04d83793",
  "code_hash": "de773b2a314c96e289842042d0fb8a2505ba4cc853850ee88b482ddbeff5ea78",
  "config": {
   "bw_hz": 10000000.0,
@@ -38,9 +38,10 @@
   "ues_per_cell": 4
  },
  "git_dirty": false,
- "git_sha": "7b23b1978e1de005f6440190298e0475af423e4f",
+ "git_sha": "7106ca94dc36a33b4f144ea3444f145b04d83793",
  "kind": "horizon",
  "policy": "iql_team",
+ "regenerated": false,
  "tuning": {
   "fixed_mcs": 7,
   "olla_init": -2.0,

@@ -87,18 +87,23 @@ and grid evaluation on the eval seeds.
 ## Reproducibility guards
 
 - `scripts/aggregate.py` refuses (exit 2, writes nothing, creates no directory) unless `results/raw` holds exactly
-  the expected files, every output has a `meta.json` with the same code hash per kind (main grid / sweep / horizon),
-  none was produced from a dirty tree, the tuned rule parameters equal `results/dev_tuning_<scenario>.json`, and the
-  main-grid config equals the scenario config. There is no partial mode. Paired comparisons assert that both arms
+  the expected files, every output has a `meta.json` whose code hash equals the current tree's for its kind (main
+  grid / sweep / horizon), every output was produced from a clean git checkout (dirty or unknown git state is
+  refused), the tuned rule parameters equal `results/dev_tuning_<scenario>.json`, and the config equals the scenario
+  config (main grid) or the default config (sweep, horizon). There is no partial mode. Paired comparisons assert that both arms
   use the same episode seeds.
 - Provenance: `meta.json` holds a SHA-256 over every file that can change a result (`aran/provenance.py`
-  `CODE_FILES`, plus the sweep/horizon script for those files), the git commit and dirty flag, the env config and
+  `CODE_FILES`, plus the sweep/horizon script for those files), the git commit and dirty flag (true / false, or
+  null = unknown when not run from the repository's own git checkout), the env config and
   the tuned rule parameters. `run_grid.py` / `run_sweep.py` / `run_horizon.py` skip an output only when its
   `meta.json` matches all three ("skip (up to date)"); an output with missing or stale provenance is an error unless
   `--force`. The committed raw results predate this, so their metas were backfilled by
   [`scripts/backfill_meta.py`](../scripts/backfill_meta.py) only after regenerating every rule run, one training
   seed per learner and scenario, and the rule + IQL sweep/horizon files and finding them byte-identical (record:
-  [`results/provenance_check.json`](../results/provenance_check.json)).
+  [`results/provenance_check.json`](../results/provenance_check.json)). Each backfilled meta carries
+  `"regenerated": true` only for those outputs. In review round 2 the reviewer also retrained four runs the backfill
+  did not regenerate (default/iql_s5, coupled/vdn_s9, default/sa_s12, coupled/iql_team_s14) and found them
+  byte-identical.
 - `scripts/make_figures.py` and `scripts/readme_tables.py` refuse a summary that does not cover the full grid.
 - `scripts/mutation_check.py` first runs the unmutated copy (must pass), then applies single-line bugs to a
   throw-away copy and requires `pytest` to exit 1 on each; any other exit code counts as an error, not a kill.
