@@ -1,0 +1,9 @@
+sa seed=0 ep=50/400 eps=0.80 se=1.456 bler=0.392
+sa seed=0 ep=100/400 eps=0.60 se=2.235 bler=0.305
+sa seed=0 ep=150/400 eps=0.41 se=2.031 bler=0.317
+sa seed=0 ep=200/400 eps=0.21 se=1.382 bler=0.315
+sa seed=0 ep=250/400 eps=0.05 se=1.348 bler=0.320
+sa seed=0 ep=300/400 eps=0.05 se=1.231 bler=0.298
+sa seed=0 ep=350/400 eps=0.05 se=0.962 bler=0.373
+sa seed=0 ep=400/400 eps=0.05 se=2.357 bler=0.235
+sa 400 time 91 se 1.722 bler 0.371 edge 0.166 pow -0.25

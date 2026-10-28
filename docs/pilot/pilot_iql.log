@@ -1,0 +1,9 @@
+iql seed=0 ep=50/400 eps=0.80 se=1.128 bler=0.548
+iql seed=0 ep=100/400 eps=0.60 se=2.024 bler=0.400
+iql seed=0 ep=150/400 eps=0.41 se=1.774 bler=0.422
+iql seed=0 ep=200/400 eps=0.21 se=1.357 bler=0.438
+iql seed=0 ep=250/400 eps=0.05 se=1.437 bler=0.385
+iql seed=0 ep=300/400 eps=0.05 se=1.393 bler=0.363
+iql seed=0 ep=350/400 eps=0.05 se=1.079 bler=0.447
+iql seed=0 ep=400/400 eps=0.05 se=2.340 bler=0.302
+iql 400 time 104 se 1.75 bler 0.362 edge 0.168 pow -0.15

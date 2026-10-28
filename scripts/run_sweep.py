@@ -1,0 +1,78 @@
+"""Evaluation-only sweep over UE speed x CQI delay in the default scenario: the rule baselines (OLLA keeps its
+default-scenario dev tuning) and every trained learner (trained once at 30 km/h, 4-TTI delay - so off-grid cells
+are out-of-distribution for the learners) on the first SWEEP_EVAL_EPISODES evaluation episodes.
+Output: results/raw/sweep/<policy>.csv with one row per (speed, delay, [seed,] episode)."""
+import argparse, os, sys, time
+from multiprocessing import Pool
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, ROOT)
+sys.path.insert(0, os.path.join(ROOT, "scripts"))
+import json
+import torch
+
+from aran import agents as A, policies as P, scenarios as S
+from aran import provenance as PV
+from aran.env import MultiCellLAEnv, with_
+from run_grid import rule_policy, write_csv, StaleResult
+
+SWEEP_RULES = ("cqi-only", "olla-tuned", "genie")
+KEYS = ("speed_kmh", "cqi_delay", "seed", "episode_seed", "se", "bler", "jain", "edge", "power_db", "inr_db")
+
+
+def expected_sweep_files():
+    names = [f"rule_{r}" for r in SWEEP_RULES] + list(S.LEARNERS)
+    return sorted([f"sweep/{n}.csv" for n in names] + [f"sweep/{n}.meta.json" for n in names])
+
+
+def job(args):
+    name, raw, force = args
+    path = os.path.join(raw, "sweep", f"{name}.csv")
+    t0 = time.time()
+    torch.set_num_threads(1)
+    base = S.scenario_config("default", os.path.join(ROOT, "config/default.json"))
+    tun = json.load(open(os.path.join(os.path.dirname(os.path.abspath(raw)), "dev_tuning_default.json")))
+    mpath = path[:-4] + ".meta.json"
+    meta = PV.run_meta(base, tun, extra_files=("scripts/run_sweep.py",), kind="sweep", policy=name)
+    if not force and os.path.exists(path):
+        if PV.up_to_date(mpath, meta):
+            return path, "skip (up to date)"
+        raise StaleResult(f"{path}: output exists but its meta.json is missing or stale; re-run with --force")
+    if name.startswith("rule_"):
+        pols = [(-1, rule_policy(name[5:], tun))]
+    else:
+        pols = []
+        for s in S.SEEDS:
+            net = A.QNet(base.n_actions)
+            net.load_state_dict(torch.load(os.path.join(raw, "default", f"{name}_s{s}", "model.pt")))
+            pols.append((s, A.NetPolicy(net, name)))
+    rows = []
+    eps = list(A.EVAL_SEEDS)[:S.SWEEP_EVAL_EPISODES]
+    for v in S.SWEEP_SPEEDS:
+        for d in S.SWEEP_DELAYS:
+            env = MultiCellLAEnv(with_(base, speed_kmh=float(v), cqi_delay=int(d)))
+            for s, pol in pols:
+                for e in eps:
+                    k = P.run_episode(env, pol, e)
+                    k.update(speed_kmh=v, cqi_delay=d, seed=s, episode_seed=e)
+                    rows.append(k)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    write_csv(path, rows, KEYS)
+    PV.write_meta(mpath, meta)
+    return path, f"{time.time() - t0:.0f}s"
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--raw", default=os.path.join(ROOT, "results/raw"))
+    ap.add_argument("--workers", type=int, default=7)
+    ap.add_argument("--force", action="store_true")
+    a = ap.parse_args()
+    jobs = [(f"rule_{r}", a.raw, a.force) for r in SWEEP_RULES] + [(m, a.raw, a.force) for m in S.LEARNERS]
+    with Pool(a.workers) as pool:
+        for p, dt in pool.imap_unordered(job, jobs):
+            print(f"[{time.strftime('%H:%M:%S')}] {os.path.relpath(p, a.raw)} {dt}", flush=True)
+
+
+if __name__ == "__main__":
+    main()

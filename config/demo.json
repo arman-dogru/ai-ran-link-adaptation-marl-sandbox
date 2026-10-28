@@ -1,0 +1,35 @@
+{
+  "n_cells": 3,
+  "ues_per_cell": 4,
+  "isd_m": 500.0,
+  "ue_radius_frac": 0.6,
+  "n_outer": 6,
+  "outer_ring_frac": 2.0,
+  "outer_load": 0.5,
+  "outer_burst_tti": 20.0,
+  "tx_dbm": 46.0,
+  "power_levels_db": [
+    0.0,
+    -3.0,
+    -6.0
+  ],
+  "mcs_deltas": [
+    -4,
+    -3,
+    -2,
+    -1,
+    0,
+    1,
+    2
+  ],
+  "bw_hz": 10000000.0,
+  "nf_db": 9.0,
+  "shadow_db": 8.0,
+  "speed_kmh": 30.0,
+  "fc_hz": 3500000000.0,
+  "tti_s": 0.001,
+  "cqi_delay": 4,
+  "cqi_noise_db": 1.0,
+  "episode_tti": 200,
+  "pf_window": 50.0
+}

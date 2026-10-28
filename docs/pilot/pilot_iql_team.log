@@ -1,0 +1,9 @@
+iql_team seed=0 ep=50/400 eps=0.80 se=1.042 bler=0.563
+iql_team seed=0 ep=100/400 eps=0.60 se=1.967 bler=0.420
+iql_team seed=0 ep=150/400 eps=0.41 se=1.672 bler=0.455
+iql_team seed=0 ep=200/400 eps=0.21 se=1.194 bler=0.482
+iql_team seed=0 ep=250/400 eps=0.05 se=1.346 bler=0.410
+iql_team seed=0 ep=300/400 eps=0.05 se=1.140 bler=0.445
+iql_team seed=0 ep=350/400 eps=0.05 se=0.963 bler=0.480
+iql_team seed=0 ep=400/400 eps=0.05 se=2.219 bler=0.348
+iql_team 400 time 107 se 1.611 bler 0.375 edge 0.145 pow -1.53

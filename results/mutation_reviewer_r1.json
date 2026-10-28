@@ -1,0 +1,107 @@
+{
+ "control": {
+  "status": "passed",
+  "exit": 0,
+  "summary": "133 passed in 17.11s"
+ },
+ "killed": 14,
+ "total": 16,
+ "mutants": [
+  {
+   "what": "R1 learners train on the evaluation episodes",
+   "status": "killed",
+   "exit": 1,
+   "why": "FAILED tests/test_pipeline.py::test_training_resets_only_on_training_episodes[sa]"
+  },
+  {
+   "what": "R2 grid evaluates on dev seeds",
+   "status": "BAD-PATTERN",
+   "exit": null,
+   "why": ""
+  },
+  {
+   "what": "R3 OLLA tuned on evaluation episodes",
+   "status": "BAD-PATTERN",
+   "exit": null,
+   "why": ""
+  },
+  {
+   "what": "R4 obs[0] = true current-channel CQI (genie leak)",
+   "status": "killed",
+   "exit": 1,
+   "why": "FAILED tests/test_env.py::test_observation_features - assert False"
+  },
+  {
+   "what": "R5 trend feature leaks future CQI",
+   "status": "killed",
+   "exit": 1,
+   "why": "FAILED tests/test_pipeline.py::test_observations_are_causal[default-5000-7]"
+  },
+  {
+   "what": "R6 CQI delay off by one (D-1)",
+   "status": "killed",
+   "exit": 1,
+   "why": "FAILED tests/test_env.py::test_cqi_report_is_delayed_measurement - assert False"
+  },
+  {
+   "what": "R7 relative % uses the wrong base",
+   "status": "killed",
+   "exit": 1,
+   "why": "FAILED tests/test_pipeline.py::test_summarise_end_to_end - assert 5.711053945..."
+  },
+  {
+   "what": "R8 ties counted as wins",
+   "status": "killed",
+   "exit": 1,
+   "why": "FAILED tests/test_pipeline.py::test_summarise_end_to_end - assert (15 == 14)"
+  },
+  {
+   "what": "R9 one-sided p for learners",
+   "status": "killed",
+   "exit": 1,
+   "why": "FAILED tests/test_aggregate.py::test_compare_learned_vs_rule_uses_seed_unit"
+  },
+  {
+   "what": "R10 Holm family per scenario (17, not 34)",
+   "status": "killed",
+   "exit": 1,
+   "why": "FAILED tests/test_pipeline.py::test_summarise_end_to_end - assert False"
+  },
+  {
+   "what": "R11 replay never marks terminal",
+   "status": "killed",
+   "exit": 1,
+   "why": "FAILED tests/test_pipeline.py::test_replay_marks_only_the_last_step_terminal"
+  },
+  {
+   "what": "R12 deployed policy ignores power action",
+   "status": "killed",
+   "exit": 1,
+   "why": "FAILED tests/test_pipeline.py::test_deployed_policy_applies_learned_power_and_delta"
+  },
+  {
+   "what": "R13 revert to strict back-off rule",
+   "status": "killed",
+   "exit": 1,
+   "why": "FAILED tests/test_policies.py::test_backoff_only_at_top_cqi - assert False"
+  },
+  {
+   "what": "R14 CQI ignores neighbours' actual power",
+   "status": "killed",
+   "exit": 1,
+   "why": "FAILED tests/test_pipeline.py::test_step_measures_cqi_with_the_neighbours_actual_power"
+  },
+  {
+   "what": "R15 rule row mis-paired with learner episodes",
+   "status": "killed",
+   "exit": 1,
+   "why": "FAILED tests/test_pipeline.py::test_summarise_end_to_end - assert (0.10000000..."
+  },
+  {
+   "what": "R16 IQL-team uses summed (not mean) team reward",
+   "status": "killed",
+   "exit": 1,
+   "why": "FAILED tests/test_agents.py::test_rewards_for - AssertionError: assert False"
+  }
+ ]
+}

@@ -1,0 +1,9 @@
+vdn seed=0 ep=50/400 eps=0.80 se=1.093 bler=0.555
+vdn seed=0 ep=100/400 eps=0.60 se=1.982 bler=0.422
+vdn seed=0 ep=150/400 eps=0.41 se=1.746 bler=0.430
+vdn seed=0 ep=200/400 eps=0.21 se=1.181 bler=0.482
+vdn seed=0 ep=250/400 eps=0.05 se=1.250 bler=0.463
+vdn seed=0 ep=300/400 eps=0.05 se=1.219 bler=0.432
+vdn seed=0 ep=350/400 eps=0.05 se=0.971 bler=0.500
+vdn seed=0 ep=400/400 eps=0.05 se=2.111 bler=0.347
+vdn 400 time 106 se 1.569 bler 0.417 edge 0.14 pow -1.86
